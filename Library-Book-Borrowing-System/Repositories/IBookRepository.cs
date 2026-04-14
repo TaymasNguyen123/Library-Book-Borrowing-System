@@ -4,15 +4,18 @@ namespace Library_Book_Borrowing_System.Repositories;
 
 public interface IBookRepository
 {
-    Book CreateBook(Book book);
-    IEnumerable<Book> GetAllBooks();
-    Book GetBookById(Guid id);
-    Book UpdateBook(
+    Book Add(Book book);
+    IEnumerable<Book> GetAll();
+    Book GetById(Guid id);
+    Book Update(
+        Guid? updateId,
         string? updateTitle = null,
         string? updateAuthor = null,
         string? updateIsbn = null,
         int? updateTotalCopies = null,
         int? updateAvailableCopies = null
     );
-    void DeleteBook(Guid id);
+    void Delete(Guid id);
+
+    Task<bool> ExistsAsyc(Guid bookId);
 }

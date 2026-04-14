@@ -4,12 +4,14 @@ namespace Library_Book_Borrowing_System.Repositories;
 
 public interface IMemberRepository
 {
-    Member CreateMember(Member member);
-    IEnumerable<Member> GetAllMembers();
-    Member GetMemberById(Guid id);
-    Member UpdateMember(
+    Member Add(Member member);
+    IEnumerable<Member> GetAll();
+    Member GetById(Guid id);
+    Member Update(
         string? updateFullName = null,
         string? updateEmail = null
     );
-    void DeleteMember(Guid id);
+    void Delete(Guid id);
+
+    Task<bool> ExistsAsync(Guid memberId);
 }

@@ -4,8 +4,10 @@ namespace Library_Book_Borrowing_System.Repositories;
 
 public interface IBorrowRecordRepository
 {
-    BorrowRecord BorrowBook(BorrowRecord borrowRecord);
-    BorrowRecord ReturnBook(BorrowRecord borrowRecord);
-    IEnumerable<BorrowRecord> GetAllBorrowRecords();
-    IEnumerable<BorrowRecord> GetMemberBorrowRecord(Guid id);
+    BorrowRecord Borrow(BorrowRecord borrowRecord);
+    BorrowRecord Return(BorrowRecord borrowRecord);
+    IEnumerable<BorrowRecord> GetAll();
+    IEnumerable<BorrowRecord> GetByMemberId(Guid id);
+    Task<int> CountByBookId(Guid id);
+    Task<bool> ExistsAsync(Guid recordId);
 }
