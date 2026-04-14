@@ -17,5 +17,5 @@ public interface IBookRepository
     );
     void Delete(Guid id);
 
-    Task<bool> ExistsAsyc(Guid bookId);
+    Task<bool> ExistsAsync(Guid bookId);
 }
