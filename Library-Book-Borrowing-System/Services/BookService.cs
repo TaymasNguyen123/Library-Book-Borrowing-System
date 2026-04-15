@@ -83,7 +83,7 @@ public class BookService: IBookService
             RemainingAvailable = remainingAvailable
         };
     }
-    public GetBookResponse UpdateBook(UpdateBookRequest book)
+    public GetBookResponse UpdateBook(Book oldBook, UpdateBookRequest book)
     {
         if (book.AvailableCopies > book.TotalCopies)
         {
@@ -91,6 +91,7 @@ public class BookService: IBookService
         }
 
         var updated = _bookRepository.Update(
+            oldBook,
             book.Id,
             book.Title,
             book.Author,
