@@ -9,6 +9,7 @@ public interface IBookRepository
     Book? GetById(Guid id);
     Book? GetByTitle(string title);
     Book Update(
+        Book oldBook,
         Guid? updateId,
         string? updateTitle = null,
         string? updateAuthor = null,
