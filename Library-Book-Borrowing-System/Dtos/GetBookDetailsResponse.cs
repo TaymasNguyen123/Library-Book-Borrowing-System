@@ -1,6 +1,6 @@
 namespace Library_Book_Borrowing_System.Dtos;
 
-public class GetBookResponse
+public class GetBookDetailsResponse
 {
     public Guid Id { get; set; }
     public required string Title { get; set; }
@@ -8,4 +8,6 @@ public class GetBookResponse
     public required string Isbn { get; set; }
     public int TotalCopies { get; set; }
     public int AvailableCopies { get; set; }
+    public int TotalBorrowedCount { get; set; }
+    public int RemainingAvailable { get; set; }
 }

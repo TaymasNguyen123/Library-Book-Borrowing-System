@@ -1,8 +1,8 @@
 namespace Library_Book_Borrowing_System.Dtos;
 
-public class GetBookResponse
+public class UpdateBookRequest
 {
-    public Guid Id { get; set; }
+    public required Guid Id { get; set; }
     public required string Title { get; set; }
     public required string Author { get; set; }
     public required string Isbn { get; set; }
