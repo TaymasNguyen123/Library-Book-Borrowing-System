@@ -6,8 +6,8 @@ public interface IBookRepository
 {
     Book Add(Book book);
     IEnumerable<Book> GetAll();
-    Book GetById(Guid id);
-    Book GetByTitle(string title);
+    Book? GetById(Guid id);
+    Book? GetByTitle(string title);
     Book Update(
         Guid? updateId,
         string? updateTitle = null,

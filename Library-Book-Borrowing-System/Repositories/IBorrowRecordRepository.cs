@@ -7,7 +7,7 @@ public interface IBorrowRecordRepository
     BorrowRecord Borrow(BorrowRecord borrowRecord);
     BorrowRecord Return(BorrowRecord borrowRecord);
     IEnumerable<BorrowRecord> GetAll();
-    IEnumerable<BorrowRecord> GetByMemberId(Guid id);
+    IEnumerable<BorrowRecord>? GetByMemberId(Guid id);
     Task<int> CountByBorrowed(Guid bookId);
     Task<bool> ExistsAsync(Guid recordId);
 }

@@ -6,7 +6,7 @@ public interface IMemberRepository
 {
     Member Add(Member member);
     IEnumerable<Member> GetAll();
-    Member GetById(Guid id);
+    Member? GetById(Guid id);
     Member Update(
         string? updateFullName = null,
         string? updateEmail = null
