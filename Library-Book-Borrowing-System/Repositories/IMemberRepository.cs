@@ -8,6 +8,7 @@ public interface IMemberRepository
     IEnumerable<Member> GetAll();
     Member? GetById(Guid id);
     Member Update(
+        Member oldMember, 
         string? updateFullName = null,
         string? updateEmail = null
     );
