@@ -8,6 +8,6 @@ public interface IBorrowRecordRepository
     BorrowRecord Return(BorrowRecord borrowRecord);
     IEnumerable<BorrowRecord> GetAll();
     IEnumerable<BorrowRecord>? GetByMemberId(Guid id);
-    Task<int> CountByBorrowed(Guid bookId);
+    int CountByBorrowed(Guid bookId);
     Task<bool> ExistsAsync(Guid recordId);
 }
