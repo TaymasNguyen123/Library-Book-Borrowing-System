@@ -10,7 +10,8 @@ public interface IMemberRepository
     Member Update(
         Member oldMember, 
         string? updateFullName = null,
-        string? updateEmail = null
+        string? updateEmail = null,
+        ICollection<BorrowRecord>? updateBorrowRecords = null
     );
     void Delete(Guid id);
 

@@ -26,13 +26,15 @@ public class MemberRepository(Database database) : IMemberRepository
     public Member Update(
         Member oldMember,
         string? updateFullName = null,
-        string? updateEmail = null
+        string? updateEmail = null,
+        ICollection<BorrowRecord>? updateBorrowRecords = null
     )
     {
         Member? findMember = database.Members.AsNoTracking().FirstOrDefault(member => member.Id == oldMember.Id);
 
         findMember.FullName = updateFullName == null ? findMember.FullName : updateFullName;
         findMember.Email = updateEmail == null ? findMember.Email : updateEmail;
+        findMember.BorrowRecords = updateBorrowRecords == null ? findMember.BorrowRecords : updateBorrowRecords;
 
         database.SaveChanges();
 

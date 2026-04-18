@@ -15,7 +15,9 @@ public interface IBookRepository
         string? updateAuthor = null,
         string? updateIsbn = null,
         int? updateTotalCopies = null,
-        int? updateAvailableCopies = null
+        int? updateAvailableCopies = null,
+        int? BorrowedCount = null
+
     );
     void Delete(Guid id);
 

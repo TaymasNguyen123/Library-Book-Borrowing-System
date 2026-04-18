@@ -55,14 +55,16 @@ public class MemberService(IMemberRepository _memberRepository) : IMemberService
         Member member_ = _memberRepository.Update(
             oldMember,
             member.FullName,
-            member.Email
+            member.Email,
+            member.BorrowRecords
         );
 
         return new GetMemberResponse
         {
             Id = member_.Id,
             FullName = member_.FullName,
-            Email = member_.Email
+            Email = member_.Email,
+            BorrowRecords = member_.BorrowRecords
         };
     }
     public void DeleteMember(Guid id)

@@ -34,7 +34,8 @@ public class BookService: IBookService
             Author = book.Author,
             Isbn = book.Isbn,
             TotalCopies = book.TotalCopies,
-            AvailableCopies = book.AvailableCopies
+            AvailableCopies = book.AvailableCopies,
+            BorrowedCount = 0
         };
 
         var created = _bookRepository.Add(bk);
@@ -79,8 +80,8 @@ public class BookService: IBookService
             Isbn = bk.Isbn,
             TotalCopies = bk.TotalCopies,
             AvailableCopies = bk.AvailableCopies,
-            TotalBorrowedCount = totalBorrowedCount,
-            RemainingAvailable = remainingAvailable
+            RemainingAvailable = remainingAvailable,
+            BorrowedCount = bk.BorrowedCount
         };
     }
     public GetBookResponse UpdateBook(Book oldBook, UpdateBookRequest book)
@@ -97,7 +98,8 @@ public class BookService: IBookService
             book.Author,
             book.Isbn,
             book.TotalCopies,
-            book.AvailableCopies
+            book.AvailableCopies,
+            book.BorrowedCount
         );
 
         return new GetBookResponse
@@ -107,7 +109,8 @@ public class BookService: IBookService
             Author = updated.Author,
             Isbn = updated.Isbn,
             TotalCopies = updated.TotalCopies,
-            AvailableCopies = updated.AvailableCopies
+            AvailableCopies = updated.AvailableCopies,
+            BorrowedCount = updated.BorrowedCount
         };
     }
     public void DeleteBook(Guid id)

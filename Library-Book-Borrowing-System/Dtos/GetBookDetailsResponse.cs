@@ -10,4 +10,5 @@ public class GetBookDetailsResponse
     public int AvailableCopies { get; set; }
     public int TotalBorrowedCount { get; set; }
     public int RemainingAvailable { get; set; }
+    public int BorrowedCount { get; set; }
 }
