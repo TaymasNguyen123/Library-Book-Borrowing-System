@@ -6,6 +6,6 @@ public class BorrowRecord
     public Guid BookId { get; set; }
     public Guid MemberId { get; set; }
     public DateTime BorrowDate { get; set; }
-    public DateTime ReturnDate { get; set; }
+    public DateTime? ReturnDate { get; set; }
     public required string Status { get; set; }
 }
