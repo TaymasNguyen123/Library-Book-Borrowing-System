@@ -61,7 +61,7 @@ public class BookService: IBookService
                 AvailableCopies = bk.AvailableCopies
             });
     }
-    public async Task<GetBookDetailsResponse> GetBookById(Guid id)
+    public GetBookDetailsResponse GetBookById(Guid id)
     {
         var bk = _bookRepository.GetById(id);
         if (bk is null)
