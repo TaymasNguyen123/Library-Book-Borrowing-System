@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Components.Web;
 namespace Library_Book_Borrowing_System.Services;
 
 public class BookService: IBookService
-{
+{ 
     private readonly IBookRepository _bookRepository;
     private readonly IBorrowRecordRepository _borrowRecordRepository;
 
@@ -68,7 +68,7 @@ public class BookService: IBookService
         {
             throw new Exception("Book does not exist");
         }
-        var totalBorrowedCount = await _borrowRecordRepository.CountByBorrowed(id);
+        var totalBorrowedCount = _borrowRecordRepository.CountByBorrowed(id);
         var remainingAvailable = bk.TotalCopies - bk.AvailableCopies;
 
         return new GetBookDetailsResponse
