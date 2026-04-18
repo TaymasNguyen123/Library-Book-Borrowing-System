@@ -2,6 +2,7 @@ using Library_Book_Borrowing_System.Dtos;
 using Library_Book_Borrowing_System.Models;
 using Library_Book_Borrowing_System.Repositories;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Library_Book_Borrowing_System.Services;
 
@@ -34,7 +35,8 @@ public class BookService: IBookService
             Author = book.Author,
             Isbn = book.Isbn,
             TotalCopies = book.TotalCopies,
-            AvailableCopies = book.AvailableCopies
+            AvailableCopies = book.AvailableCopies,
+            BorrowedCount = 0
         };
 
         var created = _bookRepository.Add(bk);
@@ -58,10 +60,11 @@ public class BookService: IBookService
                 Author = bk.Author,
                 Isbn = bk.Isbn,
                 TotalCopies = bk.TotalCopies,
-                AvailableCopies = bk.AvailableCopies
+                AvailableCopies = bk.AvailableCopies,
+                BorrowedCount = bk.BorrowedCount
             });
     }
-    public GetBookDetailsResponse GetBookById(Guid id)
+    public async Task<GetBookDetailsResponse> GetBookById(Guid id)
     {
         var bk = _bookRepository.GetById(id);
         if (bk is null)
@@ -79,7 +82,7 @@ public class BookService: IBookService
             Isbn = bk.Isbn,
             TotalCopies = bk.TotalCopies,
             AvailableCopies = bk.AvailableCopies,
-            TotalBorrowedCount = totalBorrowedCount,
+            TotalBorrowedCount = (int) totalBorrowedCount,
             RemainingAvailable = remainingAvailable
         };
     }
