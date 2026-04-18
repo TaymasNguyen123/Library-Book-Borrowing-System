@@ -27,12 +27,12 @@ public class BorrowRecordRepository(Database database) : IBorrowRecordRepository
 
     public IEnumerable<BorrowRecord>? GetByMemberId(Guid id)
     {
-        return database.Members.AsNoTracking().FirstOrDefault(member => member.Id == id).BorrowRecords;
+        return database.Members.AsNoTracking().FirstOrDefault(member => member.Id == id)?.BorrowRecords;
     }
 
-    public int CountByBorrowed(Guid bookId)
+    public int? CountByBorrowed(Guid bookId)
     {
-        return database.Books.AsNoTracking().FirstOrDefault(book => book.Id == bookId).BorrowedCount;
+        return database.Books.AsNoTracking().FirstOrDefault(book => book.Id == bookId)?.BorrowedCount;
     }
     
     public Task<bool> ExistsAsync(Guid recordId)
