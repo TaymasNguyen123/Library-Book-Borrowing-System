@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Library_Book_Borrowing_System.Dtos;
 using Library_Book_Borrowing_System.Models;
 using Library_Book_Borrowing_System.Services;
+using System.Runtime.InteropServices;
 
 namespace Library_Book_Borrowing_System.Controllers;
 
@@ -9,7 +10,7 @@ namespace Library_Book_Borrowing_System.Controllers;
 [Route("api/books")]
 public class BooksController(IBookService bookService) : ControllerBase
 {
-    [HttpGet]
+    [HttpPost]
     public ActionResult<GetBookResponse> CreateBook(CreateBookRequest book)
     {
         return bookService.CreateBook(book);
@@ -29,9 +30,9 @@ public class BooksController(IBookService bookService) : ControllerBase
     }
 
     [HttpPost("{oldBook}/{book}")]
-    public ActionResult<GetBookResponse> UpdateBook(Book oldBook, UpdateBookRequest book)
+    public ActionResult<GetBookResponse> UpdateBook([FromBody] dynamic Wrapper)
     {
-        return Ok(bookService.UpdateBook(oldBook, book));
+        return Ok(bookService.UpdateBook(Wrapper.oldBook, Wrapper.book));
     }
 
     [HttpDelete("{id:guid}")]
