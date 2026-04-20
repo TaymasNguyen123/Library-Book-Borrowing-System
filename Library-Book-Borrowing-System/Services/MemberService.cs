@@ -50,19 +50,24 @@ public class MemberService(IMemberRepository _memberRepository) : IMemberService
         };
         return Task.FromResult(newMember);
     }
-    public GetMemberResponse UpdateMember(Member oldMember, UpdateMemberRequest member)
+    public GetMemberResponse UpdateMember(Guid id, UpdateMemberRequest member)
     {
-        Member member_ = _memberRepository.Update(
-            oldMember,
-            member.FullName,
-            member.Email
-        );
+        Member? memberUpdating = _memberRepository.GetById(id);
+        if (memberUpdating is null)
+        {
+            throw new Exception("Member does not exist");
+        }
+
+        memberUpdating.FullName = member.FullName ?? memberUpdating.FullName;
+        memberUpdating.Email = member.Email ?? memberUpdating.Email;
+
+        Member updated = _memberRepository.Update(id, memberUpdating);
 
         return new GetMemberResponse
         {
-            Id = member_.Id,
-            FullName = member_.FullName,
-            Email = member_.Email
+            Id = id,
+            FullName = updated.FullName,
+            Email = updated.Email
         };
     }
     public void DeleteMember(Guid id)

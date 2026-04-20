@@ -7,11 +7,7 @@ public interface IMemberRepository
     Member Add(Member member);
     IEnumerable<Member> GetAll();
     Member? GetById(Guid id);
-    Member Update(
-        Member oldMember, 
-        string? updateFullName = null,
-        string? updateEmail = null
-    );
+    Member? Update(Guid id, Member member);
     void Delete(Guid id);
 
     Task<bool> ExistsAsync(Guid memberId);

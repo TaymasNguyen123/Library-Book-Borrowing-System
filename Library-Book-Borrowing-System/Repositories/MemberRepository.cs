@@ -23,19 +23,16 @@ public class MemberRepository(Database database) : IMemberRepository
         return database.Members.AsNoTracking().FirstOrDefault(member => member.Id == id);
     }
 
-    public Member Update(
-        Member oldMember,
-        string? updateFullName = null,
-        string? updateEmail = null
-    )
+    public Member? Update(Guid id, Member member)
     {
-        Member? findMember = database.Members.AsNoTracking().FirstOrDefault(member => member.Id == oldMember.Id);
+        Member? findMember = GetById(id);
+        if (findMember is not null)
+        {
+            findMember.FullName = member.FullName;
+            findMember.Email = member.Email;
 
-        findMember.FullName = updateFullName == null ? findMember.FullName : updateFullName;
-        findMember.Email = updateEmail == null ? findMember.Email : updateEmail;
-
-        database.SaveChanges();
-
+            database.SaveChanges();
+        }
         return findMember;
     }
 

@@ -7,6 +7,6 @@ public interface IMemberService
     GetMemberResponse CreateMember(CreateMemberRequest member);
     IEnumerable<GetMemberResponse> GetAllMembers();
     Task<GetMemberResponse> GetMemberById(Guid id);
-    GetMemberResponse UpdateMember(Member oldMember, UpdateMemberRequest member);
+    GetMemberResponse UpdateMember(Guid id, UpdateMemberRequest member);
     void DeleteMember(Guid id);
 }
