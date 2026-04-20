@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Library_Book_Borrowing_System.Migrations
 {
     [DbContext(typeof(Database))]
-    [Migration("20260420012733_AddBorrowedCountToBooks")]
-    partial class AddBorrowedCountToBooks
+    [Migration("20260420205147_DatabaseMigration")]
+    partial class DatabaseMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
