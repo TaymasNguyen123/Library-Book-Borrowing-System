@@ -29,10 +29,10 @@ public class BooksController(IBookService bookService) : ControllerBase
         return Ok(response);
     }
 
-    [HttpPost("{oldBook}/{book}")]
-    public ActionResult<GetBookResponse> UpdateBook([FromBody] dynamic Wrapper)
+    [HttpPut("{id:guid}")]
+    public ActionResult<GetBookResponse> UpdateBook(Guid id, [FromBody] UpdateBookRequest newBook)
     {
-        return Ok(bookService.UpdateBook(Wrapper.oldBook, Wrapper.book));
+        return Ok(bookService.UpdateBook(id, newBook));
     }
 
     [HttpDelete("{id:guid}")]

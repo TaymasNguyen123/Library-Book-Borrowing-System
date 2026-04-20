@@ -7,7 +7,7 @@ public interface IBookService
     GetBookResponse CreateBook(CreateBookRequest book);
     IEnumerable<GetBookResponse> GetAllBooks();
     Task<GetBookDetailsResponse> GetBookById(Guid id);
-    GetBookResponse UpdateBook(Book oldBook, UpdateBookRequest book);
+    GetBookResponse UpdateBook(Guid id, UpdateBookRequest book);
     void DeleteBook(Guid id);
     
 }

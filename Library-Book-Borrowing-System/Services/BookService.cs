@@ -86,26 +86,30 @@ public class BookService: IBookService
             RemainingAvailable = remainingAvailable
         };
     }
-    public GetBookResponse UpdateBook(Book oldBook, UpdateBookRequest book)
+    public GetBookResponse UpdateBook(Guid id, UpdateBookRequest book)
     {
-        if (book.AvailableCopies > book.TotalCopies)
+        Book? bookUpdating = _bookRepository.GetById(id);
+        if (bookUpdating is null)
+        {
+            throw new Exception("Book does not exist");
+        }
+
+        bookUpdating.Title = book.Title ?? bookUpdating.Title;
+        bookUpdating.Author = book.Author ?? bookUpdating.Author;
+        bookUpdating.Isbn = book.Isbn ?? bookUpdating.Isbn;
+        bookUpdating.TotalCopies = book.TotalCopies ?? bookUpdating.TotalCopies;
+        bookUpdating.AvailableCopies = book.AvailableCopies ?? bookUpdating.AvailableCopies;
+
+        if (bookUpdating.AvailableCopies > bookUpdating.TotalCopies)
         {
             throw new Exception("Total copies must be greater than or equal to available copies");
         }
 
-        var updated = _bookRepository.Update(
-            oldBook,
-            book.Id,
-            book.Title,
-            book.Author,
-            book.Isbn,
-            book.TotalCopies,
-            book.AvailableCopies
-        );
+        var updated = _bookRepository.Update(id, bookUpdating);
 
         return new GetBookResponse
         {
-            Id = updated.Id,
+            Id = id,
             Title = updated.Title,
             Author = updated.Author,
             Isbn = updated.Isbn,

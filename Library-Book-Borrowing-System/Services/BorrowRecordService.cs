@@ -43,15 +43,8 @@ public class BorrowRecordService: IBorrowRecordService
         };
         _borrowRecordRepository.Borrow(_borrowRecord);
 
-        _bookRepository.Update(
-            _book,
-            bookId,
-            _book.Title,
-            _book.Author,
-            _book.Isbn,
-            _book.TotalCopies,
-            --_book.AvailableCopies
-        );
+        _book.AvailableCopies--;
+        _bookRepository.Update(bookId, _book);
 
         return new GetBorrowRecordResponse
         {
@@ -94,15 +87,8 @@ public class BorrowRecordService: IBorrowRecordService
         };
         _borrowRecordRepository.Return(_newRecord);
 
-        _bookRepository.Update(
-            _book,
-            bookId,
-            _book.Title,
-            _book.Author,
-            _book.Isbn,
-            _book.TotalCopies,
-            ++_book.AvailableCopies
-        );
+        _book.AvailableCopies++;
+        _bookRepository.Update(bookId, _book);
 
         return new GetBorrowRecordResponse
         {

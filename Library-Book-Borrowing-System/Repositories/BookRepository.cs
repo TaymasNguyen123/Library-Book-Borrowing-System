@@ -27,27 +27,20 @@ public class BookRepository(Database database) : IBookRepository
     {
         return database.Books.AsNoTracking().FirstOrDefault(book => book.Title == title);
     }
-    public Book Update(
-        Book oldBook,
-        Guid? updateId = null,
-        string? updateTitle = null,
-        string? updateAuthor = null,
-        string? updateIsbn = null,
-        int? updateTotalCopies = null,
-        int? updateAvailableCopies = null
-    )
+    public Book? Update(Guid id, Book book)
     {
-        Book? findBook = database.Books.AsNoTracking().FirstOrDefault(book => book.Id == oldBook.Id);
+        Book? findBook = GetById(id);
 
-        findBook.Id = updateId == null ? oldBook.Id : (Guid)updateId;
-        findBook.Title = updateTitle == null ? oldBook.Title : updateTitle;
-        findBook.Author = updateAuthor == null ? oldBook.Author : updateAuthor;
-        findBook.Isbn = updateIsbn == null ? oldBook.Isbn : updateIsbn;
-        findBook.TotalCopies = updateTotalCopies == null ? oldBook.TotalCopies : (int)updateTotalCopies;
-        findBook.AvailableCopies = updateAvailableCopies == null ? oldBook.AvailableCopies : (int)updateAvailableCopies;
+        if (findBook is not null)
+        {
+            findBook.Title = book.Title;
+            findBook.Author = book.Author;
+            findBook.Isbn = book.Isbn;
+            findBook.TotalCopies = book.TotalCopies;
+            findBook.AvailableCopies = book.AvailableCopies;
 
-        database.SaveChanges();
-
+            database.SaveChanges();
+        }
         return findBook;
     }
 
