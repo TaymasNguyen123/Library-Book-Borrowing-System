@@ -60,6 +60,7 @@ public class MemberService(IMemberRepository _memberRepository) : IMemberService
 
         memberUpdating.FullName = member.FullName ?? memberUpdating.FullName;
         memberUpdating.Email = member.Email ?? memberUpdating.Email;
+        memberUpdating.BorrowRecords = member.BorrowRecords ?? memberUpdating.BorrowRecords;
 
         Member updated = _memberRepository.Update(id, memberUpdating);
 
@@ -67,7 +68,8 @@ public class MemberService(IMemberRepository _memberRepository) : IMemberService
         {
             Id = id,
             FullName = updated.FullName,
-            Email = updated.Email
+            Email = updated.Email,
+            BorrowRecords = updated.BorrowRecords
         };
     }
     public void DeleteMember(Guid id)

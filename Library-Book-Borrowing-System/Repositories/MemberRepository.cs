@@ -30,7 +30,8 @@ public class MemberRepository(Database database) : IMemberRepository
         {
             findMember.FullName = member.FullName;
             findMember.Email = member.Email;
-
+            findMember.BorrowRecords = member.BorrowRecords;
+            
             database.SaveChanges();
         }
         return findMember;
