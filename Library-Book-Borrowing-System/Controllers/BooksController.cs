@@ -24,7 +24,7 @@ public class BooksController(IBookService bookService) : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult<GetBookResponse>> GetBookById(Guid id)
+    public async Task<ActionResult<GetBookDetailsResponse>> GetBookById(Guid id)
     {
         var response = await bookService.GetBookById(id);
         return Ok(response);
