@@ -11,14 +11,12 @@ public class BookService: IBookService
     private readonly IBookRepository _bookRepository;
     private readonly IBorrowRecordRepository _borrowRecordRepository;
     private readonly IMemoryCache _cacheGuid;
-    private readonly IMemoryCache _cacheIsbn;
 
-    public BookService(IBookRepository bookRepository, IBorrowRecordRepository borrowRecordRepository, IMemoryCache cacheGuid, IMemoryCache cacheIsbn)
+    public BookService(IBookRepository bookRepository, IBorrowRecordRepository borrowRecordRepository, IMemoryCache cacheGuid)
     {
         _bookRepository = bookRepository;
         _borrowRecordRepository = borrowRecordRepository;
         _cacheGuid = cacheGuid;
-        _cacheIsbn = cacheIsbn;
     }
 
     public GetBookResponse CreateBook(CreateBookRequest book)
@@ -33,7 +31,7 @@ public class BookService: IBookService
             throw new HttpRequestException(GlobalExceptionHandler.INVALID_ISBN, null, System.Net.HttpStatusCode.NotFound);
         }
 
-        if (_cacheIsbn.TryGetValue(book.Isbn, out _))
+        if (GetAllBooks().Any(x => x.Isbn == book.Isbn))
         {
             throw new HttpRequestException(GlobalExceptionHandler.DUPLICATE_ISBN, null, System.Net.HttpStatusCode.BadRequest);
         }
@@ -62,7 +60,6 @@ public class BookService: IBookService
         };
 
         _cacheGuid.Set(createdResponse.Id, createdResponse);
-        _cacheIsbn.Set(createdResponse.Isbn, createdResponse);
 
         return createdResponse;
     }
@@ -125,6 +122,22 @@ public class BookService: IBookService
         {
             throw new HttpRequestException(GlobalExceptionHandler.MISSING_BOOK_ID, null, System.Net.HttpStatusCode.NotFound);
         }
+        
+        if (book.AvailableCopies > book.TotalCopies)
+        {
+            throw new HttpRequestException(GlobalExceptionHandler.MORE_AVAILABLE_THAN_TOTAL, null, System.Net.HttpStatusCode.NotFound);
+        }
+
+        if (!Helper.IsValidIsbn(book.Isbn))
+        {
+            throw new HttpRequestException(GlobalExceptionHandler.INVALID_ISBN, null, System.Net.HttpStatusCode.NotFound);
+        }
+
+        
+        if (GetAllBooks().Any(x => x.Isbn == book.Isbn && x.Id != bookUpdating.Id))
+        {
+            throw new HttpRequestException(GlobalExceptionHandler.DUPLICATE_ISBN, null, System.Net.HttpStatusCode.BadRequest);   
+        }
 
         bookUpdating.Title = book.Title;
         bookUpdating.Author = book.Author;
@@ -152,14 +165,12 @@ public class BookService: IBookService
         };
 
         _cacheGuid.Set(createdResponse.Id, createdResponse);
-        _cacheIsbn.Set(createdResponse.Isbn, createdResponse);
         
         return createdResponse;
     }
     public void DeleteBook(Guid id)
     {
         _cacheGuid.Remove(id);
-        _cacheIsbn.Remove(_bookRepository.GetById(id).Isbn);
 
         _bookRepository.Delete(id);
     }

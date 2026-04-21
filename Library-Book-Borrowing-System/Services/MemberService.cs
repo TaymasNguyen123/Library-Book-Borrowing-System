@@ -6,13 +6,18 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace Library_Book_Borrowing_System.Services;
 
-public class MemberService(IMemberRepository _memberRepository, IMemoryCache _cacheGuid, IMemoryCache _cacheEmail) : IMemberService
+public class MemberService(IMemberRepository _memberRepository, IMemoryCache _cacheGuid) : IMemberService
 {
     public GetMemberResponse CreateMember(CreateMemberRequest member)
     {
         if (!Helper.IsValidEmail(member.Email))
         {
             throw new HttpRequestException(GlobalExceptionHandler.INVALID_EMAIL, null, System.Net.HttpStatusCode.BadRequest);
+        }
+
+        if (GetAllMembers().Any(x => x.Email == member.Email))
+        {
+            throw new HttpRequestException(GlobalExceptionHandler.DUPLICATE_EMAIL, null, System.Net.HttpStatusCode.BadRequest);
         }
 
 
@@ -36,7 +41,6 @@ public class MemberService(IMemberRepository _memberRepository, IMemoryCache _ca
             MembershipDate = member_.MembershipDate
         };
         _cacheGuid.Set(newMember.Id, newMember);
-        _cacheEmail.Set(newMember.Email, newMember);
         return newMember;
     }
     public IEnumerable<GetMemberResponse> GetAllMembers()
@@ -87,7 +91,16 @@ public class MemberService(IMemberRepository _memberRepository, IMemoryCache _ca
         Member? memberUpdating = _memberRepository.GetById(id);
         if (memberUpdating is null)
         {
-            throw new HttpRequestException("Member with that id does not exist", null, System.Net.HttpStatusCode.NotFound);
+            throw new HttpRequestException(GlobalExceptionHandler.MISSING_MEMBER_ID, null, System.Net.HttpStatusCode.NotFound);
+        }
+        if (!Helper.IsValidEmail(member.Email))
+        {
+            throw new HttpRequestException(GlobalExceptionHandler.INVALID_EMAIL, null, System.Net.HttpStatusCode.BadRequest);
+        }
+
+        if (GetAllMembers().Any(x => x.Email == member.Email & x.Id != memberUpdating.Id))
+        {
+            throw new HttpRequestException(GlobalExceptionHandler.DUPLICATE_EMAIL, null, System.Net.HttpStatusCode.BadRequest);
         }
 
         memberUpdating.FullName = member.FullName ?? memberUpdating.FullName;
@@ -97,7 +110,6 @@ public class MemberService(IMemberRepository _memberRepository, IMemoryCache _ca
         Member? updated = _memberRepository.Update(id, memberUpdating);
 
         _cacheGuid.Set(updated.Id, updated);
-        _cacheEmail.Set(updated.Email, updated);
 
         return new GetMemberResponse
         {
@@ -110,7 +122,6 @@ public class MemberService(IMemberRepository _memberRepository, IMemoryCache _ca
     public void DeleteMember(Guid id)
     {
         _cacheGuid.Remove(id);
-        _cacheEmail.Remove(_memberRepository.GetById(id).Email);
 
         _memberRepository.Delete(id);
     }

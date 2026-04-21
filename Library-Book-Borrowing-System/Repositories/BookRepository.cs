@@ -30,7 +30,6 @@ public class BookRepository(Database database) : IBookRepository
     public Book? Update(Guid id, Book book)
     {
         Book? findBook = GetById(id);
-
         if (findBook is not null)
         {
             findBook.Title = book.Title;
@@ -40,8 +39,10 @@ public class BookRepository(Database database) : IBookRepository
             findBook.AvailableCopies = book.AvailableCopies;
             findBook.BorrowedCount = book.BorrowedCount;
 
+            database.Entry(findBook).State = EntityState.Modified;
             database.SaveChanges();
         }
+
         return findBook;
     }
 

@@ -14,12 +14,6 @@ public class MembersController(IMemberService memberService): ControllerBase
     [HttpPost]
     public ActionResult<GetMemberResponse> CreateMember(CreateMemberRequest member)
     {
-        Regex emailPattern = new Regex(@"\w+@\w+\.\w+");
-        if (!emailPattern.IsMatch(member.Email))
-        {
-            return BadRequest();
-        }
-
         var newMember = memberService.CreateMember(member);
         return CreatedAtAction(nameof(CreateMember), new { id = newMember.Id }, newMember);
     }

@@ -32,6 +32,7 @@ public class MemberRepository(Database database) : IMemberRepository
             findMember.Email = member.Email;
             findMember.BorrowRecords = member.BorrowRecords;
             
+            database.Entry(findMember).State = EntityState.Modified;
             database.SaveChanges();
         }
         return findMember;
