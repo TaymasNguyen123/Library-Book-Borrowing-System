@@ -31,12 +31,31 @@ public class BorrowRecordService: IBorrowRecordService
             throw new HttpRequestException("Book does not have any copies available to borrow", null, System.Net.HttpStatusCode.Conflict);
         }
 
+
+        // Get all records of requested book to check if user is already borrowing
+        IEnumerable<BorrowRecord>? _records = _borrowRecordRepository.GetByMemberId(memberId)
+            ?.Where(record => 
+                record.BookId == bookId && 
+                record.MemberId == memberId &&
+                record.Status == "Borrowed"
+            );
+
+        Console.WriteLine("\n---------------------\n");
+        Console.WriteLine($"\nRECORDS FOUND: {_records}\n, COUNT: {_records.Count()}");
+        Console.WriteLine($"not null: {_records is not null}, count is 0: {_records.Count() == 0}");
+        Console.WriteLine("\n------------------\n");
+
+        if (_records is not null && _records.Count() != 0)
+        {
+            throw new HttpRequestException("Book is already being borrowed by member", null, System.Net.HttpStatusCode.Conflict);
+        }
+
         BorrowRecord _borrowRecord = new BorrowRecord
         {
             Id = new Guid(),
             BookId = bookId,
             MemberId = memberId,
-            BorrowDate = new DateTime(),
+            BorrowDate = DateTime.Now,
             ReturnDate = null,
             Status = "Borrowed"
         };
@@ -73,32 +92,28 @@ public class BorrowRecordService: IBorrowRecordService
                 record.MemberId == memberId &&
                 record.Status == "Borrowed"
             );
-
-        var _record = (_records?.ElementAt(0)) 
-            ?? throw new HttpRequestException("Member has not borrowed this book", null, System.Net.HttpStatusCode.Conflict);
-
-        BorrowRecord _newRecord = new BorrowRecord
+        if (_records is null || _records.Count() > 0)
         {
-            Id = _record.Id,
-            BookId = bookId,
-            MemberId = memberId,
-            BorrowDate = _record.BorrowDate,
-            ReturnDate = new DateTime(),
-            Status = "Returned"
-        };
-        _borrowRecordRepository.Return(_newRecord);
+            throw new HttpRequestException("Member has not borrowed this book", null, System.Net.HttpStatusCode.Conflict);
+        }
+        var _record = _records.ElementAt(0);
+        
+        _record.ReturnDate = DateTime.Now;
+        _record.Status = "Returned";
+
+        BorrowRecord returned = _borrowRecordRepository.Return(_record);
 
         _book.AvailableCopies++;
         _bookRepository.Update(bookId, _book);
 
         return new GetBorrowRecordResponse
         {
-            Id = _newRecord.Id,
+            Id = returned.Id,
             BookId = bookId,
             MemberId = memberId,
-            BorrowDate = _newRecord.BorrowDate,
-            ReturnDate = _newRecord.ReturnDate,
-            Status = _newRecord.Status
+            BorrowDate = returned.BorrowDate,
+            ReturnDate = returned.ReturnDate,
+            Status = returned.Status
         };
     }
     public IEnumerable<GetBorrowRecordResponse> GetAllRecords()
