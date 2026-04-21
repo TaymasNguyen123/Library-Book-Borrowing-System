@@ -15,8 +15,20 @@ public class BorrowRecordRepository(Database database) : IBorrowRecordRepository
 
     public BorrowRecord Return(BorrowRecord borrowRecord)
     {
-        database.BorrowRecords.Add(borrowRecord);
-        database.SaveChanges();
+        IEnumerable<BorrowRecord>? _records = GetByMemberId(borrowRecord.MemberId)
+            ?.Where(record =>
+                record.BookId == borrowRecord.BookId &&
+                record.Status == "Borrowed"
+            );
+        if (_records is not null && _records.Count() > 0)
+        {
+            BorrowRecord _record = _records.ElementAt(0);
+
+            _record.ReturnDate = borrowRecord.ReturnDate;
+            _record.Status = "Returned";
+            
+            database.SaveChanges();
+        }
         return borrowRecord;
     }
 
@@ -27,7 +39,7 @@ public class BorrowRecordRepository(Database database) : IBorrowRecordRepository
 
     public IEnumerable<BorrowRecord>? GetByMemberId(Guid id)
     {
-        return database.Members.AsNoTracking().FirstOrDefault(member => member.Id == id)?.BorrowRecords;
+        return database.BorrowRecords.AsNoTracking().Where(record => record.MemberId == id).ToList();
     }
 
     public int? CountByBorrowed(Guid bookId)

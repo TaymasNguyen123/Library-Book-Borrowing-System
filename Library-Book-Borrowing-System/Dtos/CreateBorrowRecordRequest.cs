@@ -4,6 +4,4 @@ public class CreateBorrowRecordRequest
 {
     public Guid BookId { get; set; }
     public Guid MemberId { get; set; }
-    public DateTime BorrowDate { get; set; }
-    public required string Status { get; set; }
 }
