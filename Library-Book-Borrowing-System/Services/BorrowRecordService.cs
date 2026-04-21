@@ -2,6 +2,7 @@ using Library_Book_Borrowing_System.Models;
 using Library_Book_Borrowing_System.Dtos;
 using Library_Book_Borrowing_System.Repositories;
 using System.Collections.Immutable;
+using Library_Book_Borrowing_System.GlobalException;
 
 namespace Library_Book_Borrowing_System.Services;
 
@@ -23,12 +24,12 @@ public class BorrowRecordService: IBorrowRecordService
         Book? _book = _bookRepository.GetById(bookId);
         if (_book is null)
         {
-            throw new HttpRequestException("Book with that id does not exist", null, System.Net.HttpStatusCode.NotFound);
+            throw new HttpRequestException(GlobalExceptionHandler.MISSING_BOOK_ID, null, System.Net.HttpStatusCode.NotFound);
         }
 
         if (_book.AvailableCopies <= 0)
         {
-            throw new HttpRequestException("Book does not have any copies available to borrow", null, System.Net.HttpStatusCode.Conflict);
+            throw new HttpRequestException(GlobalExceptionHandler.MORE_AVAILABLE_THAN_TOTAL, null, System.Net.HttpStatusCode.Conflict);
         }
 
 
@@ -40,14 +41,9 @@ public class BorrowRecordService: IBorrowRecordService
                 record.Status == "Borrowed"
             );
 
-        Console.WriteLine("\n---------------------\n");
-        Console.WriteLine($"\nRECORDS FOUND: {_records}\n, COUNT: {_records.Count()}");
-        Console.WriteLine($"not null: {_records is not null}, count is 0: {_records.Count() == 0}");
-        Console.WriteLine("\n------------------\n");
-
         if (_records is not null && _records.Count() != 0)
         {
-            throw new HttpRequestException("Book is already being borrowed by member", null, System.Net.HttpStatusCode.Conflict);
+            throw new HttpRequestException(GlobalExceptionHandler.DUPLICATE_RECORD, null, System.Net.HttpStatusCode.Conflict);
         }
 
         BorrowRecord _borrowRecord = new BorrowRecord
@@ -82,7 +78,7 @@ public class BorrowRecordService: IBorrowRecordService
         Book? _book = _bookRepository.GetById(bookId);
         if (_book is null)
         {
-            throw new HttpRequestException("Book with that id does not exist", null, System.Net.HttpStatusCode.NotFound);
+            throw new HttpRequestException(GlobalExceptionHandler.MISSING_BOOK_ID, null, System.Net.HttpStatusCode.NotFound);
         }
 
         // Get all borrowing records that match the book and are currently borrowed
@@ -94,7 +90,7 @@ public class BorrowRecordService: IBorrowRecordService
             );
         if (_records is null || _records.Count() > 0)
         {
-            throw new HttpRequestException("Member has not borrowed this book", null, System.Net.HttpStatusCode.Conflict);
+            throw new HttpRequestException(GlobalExceptionHandler.MISSING_BORROW_RECORD, null, System.Net.HttpStatusCode.Conflict);
         }
         var _record = _records.ElementAt(0);
         

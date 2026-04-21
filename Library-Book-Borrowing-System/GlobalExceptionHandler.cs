@@ -12,6 +12,8 @@ public class GlobalExceptionHandler : IExceptionHandler
     public const string INVALID_EMAIL = "Email is invalid";
     public const string DUPLICATE_EMAIL = "Email already exists";
     public const string DUPLICATE_ISBN = "ISBN already exists";
+    public const string MISSING_BORROW_RECORD = "Member has not borrowed this book";
+    public const string DUPLICATE_RECORD = "Book is already being borrowed by member";
 
     private readonly ILogger<GlobalExceptionHandler> _logger;
 
