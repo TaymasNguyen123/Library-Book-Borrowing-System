@@ -10,13 +10,18 @@ public class BookService: IBookService
 { 
     private readonly IBookRepository _bookRepository;
     private readonly IBorrowRecordRepository _borrowRecordRepository;
-    private readonly IMemoryCache _cacheGuid;
+    private readonly IMemoryCache _cache;
+    private readonly MemoryCacheEntryOptions _cacheOptions = new MemoryCacheEntryOptions
+    {
+        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5),
+        SlidingExpiration = TimeSpan.FromMinutes(2)
+    };
 
-    public BookService(IBookRepository bookRepository, IBorrowRecordRepository borrowRecordRepository, IMemoryCache cacheGuid)
+    public BookService(IBookRepository bookRepository, IBorrowRecordRepository borrowRecordRepository, IMemoryCache cache)
     {
         _bookRepository = bookRepository;
         _borrowRecordRepository = borrowRecordRepository;
-        _cacheGuid = cacheGuid;
+        _cache = cache;
     }
 
     public GetBookResponse CreateBook(CreateBookRequest book)
@@ -49,7 +54,7 @@ public class BookService: IBookService
 
         var created = _bookRepository.Add(bk);
 
-        GetBookResponse createdResponse = new GetBookResponse
+        return new GetBookResponse
         {
             Id = created.Id,
             Title = created.Title,
@@ -58,14 +63,14 @@ public class BookService: IBookService
             TotalCopies = created.TotalCopies,
             AvailableCopies = created.AvailableCopies
         };
-
-        _cacheGuid.Set(createdResponse.Id, createdResponse);
-
-        return createdResponse;
     }
     public IEnumerable<GetBookResponse> GetAllBooks()
     {
-        return _bookRepository.GetAll()
+        if (_cache.TryGetValue("book:list", out IEnumerable<GetBookResponse>? list)) {
+            return list;
+        }
+
+        IEnumerable<GetBookResponse> bookList = _bookRepository.GetAll()
             .Select(bk => new GetBookResponse
             {
                 Id = bk.Id,
@@ -76,35 +81,22 @@ public class BookService: IBookService
                 AvailableCopies = bk.AvailableCopies,
                 BorrowedCount = bk.BorrowedCount
             });
+
+        _cache.Set("book:list", bookList, _cacheOptions);
+        
+        return bookList;
     }
     public async Task<GetBookDetailsResponse> GetBookById(Guid id)
     {
-
-        Book bk;
-        if (_cacheGuid.TryGetValue(id, out GetBookResponse? value))
+        if (_cache.TryGetValue($"book:{id}", out GetBookDetailsResponse? value))
         {
-            bk = new Book
-            {
-                Id = value.Id,
-                Title = value.Title,
-                Author = value.Author,
-                Isbn = value.Isbn,
-                TotalCopies = value.TotalCopies,
-                AvailableCopies = value.AvailableCopies,
-                BorrowedCount = value.BorrowedCount
-            };
+            return value;
         }
-        else
-        {
-            bk = _bookRepository.GetById(id);
-        }
+        
+        Book bk = _bookRepository.GetById(id)
+                ?? throw new HttpRequestException(GlobalExceptionHandler.MISSING_BOOK_ID, null, System.Net.HttpStatusCode.NotFound);
 
-        if (bk is null)
-        {
-            throw new HttpRequestException(GlobalExceptionHandler.MISSING_BOOK_ID, null, System.Net.HttpStatusCode.NotFound);
-        }
-
-        return new GetBookDetailsResponse
+        GetBookDetailsResponse response = new GetBookDetailsResponse
         {
             Id = bk.Id,
             Title = bk.Title,
@@ -114,6 +106,10 @@ public class BookService: IBookService
             AvailableCopies = bk.AvailableCopies,
             BorrowedCount = bk.BorrowedCount
         };
+
+        _cache.Set($"book:{response.Id}", response, _cacheOptions);
+
+        return response;
     }
     public GetBookResponse UpdateBook(Guid id, UpdateBookRequest book)
     {
@@ -153,7 +149,7 @@ public class BookService: IBookService
 
         var updated = _bookRepository.Update(id, bookUpdating);
 
-        GetBookResponse createdResponse = new GetBookResponse
+        GetBookResponse response = new GetBookResponse
         {
             Id = id,
             Title = updated.Title,
@@ -163,14 +159,15 @@ public class BookService: IBookService
             AvailableCopies = updated.AvailableCopies,
             BorrowedCount = updated.BorrowedCount
         };
-
-        _cacheGuid.Set(createdResponse.Id, createdResponse);
+        _cache.Remove($"book:{response.Id}");
+        _cache.Remove("book:list");
         
-        return createdResponse;
+        return response;
     }
     public void DeleteBook(Guid id)
     {
-        _cacheGuid.Remove(id);
+        _cache.Remove($"book:{id}");
+        _cache.Remove("book:list");
 
         _bookRepository.Delete(id);
     }

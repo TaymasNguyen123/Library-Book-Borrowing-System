@@ -6,8 +6,13 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace Library_Book_Borrowing_System.Services;
 
-public class MemberService(IMemberRepository _memberRepository, IMemoryCache _cacheGuid) : IMemberService
+public class MemberService(IMemberRepository _memberRepository, IMemoryCache _cache) : IMemberService
 {
+    private readonly MemoryCacheEntryOptions _cacheOptions = new MemoryCacheEntryOptions
+    {
+        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5),
+        SlidingExpiration = TimeSpan.FromMinutes(2)        
+    };
     public GetMemberResponse CreateMember(CreateMemberRequest member)
     {
         if (!Helper.IsValidEmail(member.Email))
@@ -20,8 +25,7 @@ public class MemberService(IMemberRepository _memberRepository, IMemoryCache _ca
             throw new HttpRequestException(GlobalExceptionHandler.DUPLICATE_EMAIL, null, System.Net.HttpStatusCode.BadRequest);
         }
 
-
-        Member member_ = new Member
+        Member newMember = new Member
         {
             Id = new Guid(),
             FullName = member.FullName,
@@ -30,22 +34,19 @@ public class MemberService(IMemberRepository _memberRepository, IMemoryCache _ca
             BorrowRecords = new List<BorrowRecord>()
         };
 
-        _memberRepository.Add(member_);
+        _memberRepository.Add(newMember);
 
-
-        GetMemberResponse newMember = new GetMemberResponse
+        return new GetMemberResponse
         {
-            Id = member_.Id,
-            FullName = member_.FullName,
-            Email = member_.Email,
-            MembershipDate = member_.MembershipDate
+            Id = newMember.Id,
+            FullName = newMember.FullName,
+            Email = newMember.Email,
+            MembershipDate = newMember.MembershipDate
         };
-        _cacheGuid.Set(newMember.Id, newMember);
-        return newMember;
     }
     public IEnumerable<GetMemberResponse> GetAllMembers()
     {
-        return _memberRepository.GetAll()
+        IEnumerable<GetMemberResponse> memberList = _memberRepository.GetAll()
             .Select(member => new GetMemberResponse
             {
                 Id = member.Id,
@@ -53,38 +54,32 @@ public class MemberService(IMemberRepository _memberRepository, IMemoryCache _ca
                 Email = member.Email,
                 BorrowRecords = member.BorrowRecords
             });
+        
+        _cache.Set("member:list", memberList, _cacheOptions);
+        
+        return memberList;
     }
-    public Task<GetMemberResponse> GetMemberById(Guid id)
+    public async Task<GetMemberResponse> GetMemberById(Guid id)
     {
-        Member? member_;
-        if (_cacheGuid.TryGetValue(id, out GetMemberResponse? value))
+        if (_cache.TryGetValue(id, out GetMemberResponse? value))
         {
-            member_ = new Member
-            {
-                Id = value.Id,
-                FullName = value.FullName,
-                Email = value.Email,
-                MembershipDate = value.MembershipDate
-            };
-        }
-        else
-        {
-            member_ = _memberRepository.GetById(id);
+            return value;
         }
 
-        if (member_ is null)
-        {
-            throw new HttpRequestException(GlobalExceptionHandler.MISSING_MEMBER_ID, null, System.Net.HttpStatusCode.NotFound);
-        }
+        Member? _member = _memberRepository.GetById(id)
+            ?? throw new HttpRequestException(GlobalExceptionHandler.MISSING_MEMBER_ID, null, System.Net.HttpStatusCode.NotFound);
 
-        GetMemberResponse newMember = new GetMemberResponse
+        GetMemberResponse response = new GetMemberResponse
         {
-            Id = member_.Id,
-            FullName = member_.FullName,
-            Email = member_.Email,
-            MembershipDate = member_.MembershipDate
+            Id = _member.Id,
+            FullName = _member.FullName,
+            Email = _member.Email,
+            MembershipDate = _member.MembershipDate
         };
-        return Task.FromResult(newMember);
+
+        _cache.Set($"member:{response.Id}", response, _cacheOptions);
+
+        return await Task.FromResult(response);
     }
     public GetMemberResponse UpdateMember(Guid id, UpdateMemberRequest member)
     {
@@ -109,7 +104,8 @@ public class MemberService(IMemberRepository _memberRepository, IMemoryCache _ca
 
         Member? updated = _memberRepository.Update(id, memberUpdating);
 
-        _cacheGuid.Set(updated.Id, updated);
+        _cache.Remove($"member:{updated.Id}");
+        _cache.Remove("member:list");
 
         return new GetMemberResponse
         {
@@ -121,7 +117,8 @@ public class MemberService(IMemberRepository _memberRepository, IMemoryCache _ca
     }
     public void DeleteMember(Guid id)
     {
-        _cacheGuid.Remove(id);
+        _cache.Remove($"member:{id}");
+        _cache.Remove("member:list");
 
         _memberRepository.Delete(id);
     }

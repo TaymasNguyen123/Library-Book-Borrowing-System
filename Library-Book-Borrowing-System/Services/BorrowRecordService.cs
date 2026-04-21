@@ -3,6 +3,7 @@ using Library_Book_Borrowing_System.Dtos;
 using Library_Book_Borrowing_System.Repositories;
 using System.Collections.Immutable;
 using Library_Book_Borrowing_System.GlobalException;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Library_Book_Borrowing_System.Services;
 
@@ -10,11 +11,22 @@ public class BorrowRecordService: IBorrowRecordService
 {
     private readonly IBorrowRecordRepository _borrowRecordRepository;
     private readonly IBookRepository _bookRepository;
+    private readonly IMemoryCache _cache;
+    private readonly MemoryCacheEntryOptions _cacheOptions = new MemoryCacheEntryOptions
+    {
+        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5),
+        SlidingExpiration = TimeSpan.FromMinutes(2)    
+    };
 
-    public BorrowRecordService(IBorrowRecordRepository borrowRecordRepository, IBookRepository bookRepository)
+    public BorrowRecordService(
+        IBorrowRecordRepository borrowRecordRepository, 
+        IBookRepository bookRepository,
+        IMemoryCache cache
+    )
     {
         _borrowRecordRepository = borrowRecordRepository;
         _bookRepository = bookRepository;
+        _cache = cache;
     }
     public GetBorrowRecordResponse BorrowBook(CreateBorrowRecordRequest borrowRecord)
     {
@@ -114,7 +126,12 @@ public class BorrowRecordService: IBorrowRecordService
     }
     public IEnumerable<GetBorrowRecordResponse> GetAllRecords()
     {
-        return _borrowRecordRepository.GetAll()
+        if (_cache.TryGetValue("record:list", out IEnumerable<GetBorrowRecordResponse>? records))
+        {
+            return records;
+        }
+
+        IEnumerable<GetBorrowRecordResponse>? responses = _borrowRecordRepository.GetAll()
             .Select(record => new GetBorrowRecordResponse
             {
                 Id = record.Id,
@@ -124,11 +141,20 @@ public class BorrowRecordService: IBorrowRecordService
                 ReturnDate = record.ReturnDate,
                 Status = record.Status
             });
+        
+        _cache.Set("record:list", responses, _cacheOptions);
+        
+        return responses;
     }
 
     public IEnumerable<GetBorrowRecordResponse>? GetAllRecordsByMember(Guid memberId)
     {
-        return _borrowRecordRepository.GetByMemberId(memberId)
+        if (_cache.TryGetValue($"record:{memberId}", out IEnumerable<GetBorrowRecordResponse>? records))
+        {
+            return records;
+        }
+
+        IEnumerable<GetBorrowRecordResponse>? responses = _borrowRecordRepository.GetByMemberId(memberId)
             ?.Select(record => new GetBorrowRecordResponse
             {
                 Id = record.Id,
@@ -138,5 +164,9 @@ public class BorrowRecordService: IBorrowRecordService
                 ReturnDate = record.ReturnDate,
                 Status = record.Status
             });
+
+        _cache.Set($"record:{memberId}", responses, _cacheOptions);
+
+        return responses;
     }
 }
