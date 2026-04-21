@@ -2,10 +2,11 @@ using Library_Book_Borrowing_System.Dtos;
 using Library_Book_Borrowing_System.Models;
 using Library_Book_Borrowing_System.Repositories;
 using Library_Book_Borrowing_System.GlobalException;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Library_Book_Borrowing_System.Services;
 
-public class MemberService(IMemberRepository _memberRepository) : IMemberService
+public class MemberService(IMemberRepository _memberRepository, IMemoryCache _cacheGuid, IMemoryCache _cacheEmail) : IMemberService
 {
     public GetMemberResponse CreateMember(CreateMemberRequest member)
     {
@@ -25,6 +26,8 @@ public class MemberService(IMemberRepository _memberRepository) : IMemberService
         };
 
         _memberRepository.Add(member_);
+
+
         GetMemberResponse newMember = new GetMemberResponse
         {
             Id = member_.Id,
@@ -32,6 +35,8 @@ public class MemberService(IMemberRepository _memberRepository) : IMemberService
             Email = member_.Email,
             MembershipDate = member_.MembershipDate
         };
+        _cacheGuid.Set(newMember.Id, newMember);
+        _cacheEmail.Set(newMember.Email, newMember);
         return newMember;
     }
     public IEnumerable<GetMemberResponse> GetAllMembers()
@@ -50,7 +55,7 @@ public class MemberService(IMemberRepository _memberRepository) : IMemberService
         Member? member_ = _memberRepository.GetById(id);
         if (member_ is null)
         {
-            throw new HttpRequestException("Member with that id does not exist", null, System.Net.HttpStatusCode.NotFound);
+            throw new HttpRequestException(GlobalExceptionHandler.MISSING_MEMBER_ID, null, System.Net.HttpStatusCode.NotFound);
         }
 
         GetMemberResponse newMember = new GetMemberResponse
@@ -76,6 +81,9 @@ public class MemberService(IMemberRepository _memberRepository) : IMemberService
 
         Member? updated = _memberRepository.Update(id, memberUpdating);
 
+        _cacheGuid.Set(updated.Id, updated);
+        _cacheEmail.Set(updated.Email, updated);
+
         return new GetMemberResponse
         {
             Id = id,
@@ -86,6 +94,9 @@ public class MemberService(IMemberRepository _memberRepository) : IMemberService
     }
     public void DeleteMember(Guid id)
     {
+        _cacheGuid.Remove(id);
+        _cacheEmail.Remove(_memberRepository.GetById(id).Email);
+
         _memberRepository.Delete(id);
     }
 }
