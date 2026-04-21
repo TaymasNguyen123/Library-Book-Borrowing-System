@@ -21,12 +21,12 @@ public class BookService: IBookService
     {
         if (book.AvailableCopies > book.TotalCopies)
         {
-            throw new Exception("Total copies must be greater than or equal to available copies");
+            throw new HttpRequestException("Available copies cannot exceed total copies", null, System.Net.HttpStatusCode.NotFound);
         }
 
         if (!Helper.IsValidIsbn(book.Isbn))
         {
-            throw new Exception("Invalid ISBN");
+            throw new HttpRequestException("ISBN is invalid", null, System.Net.HttpStatusCode.NotFound);
         }
 
         var bk = new Book
@@ -67,13 +67,13 @@ public class BookService: IBookService
     }
     public async Task<GetBookDetailsResponse> GetBookById(Guid id)
     {
-        var bk = _bookRepository.GetById(id);
+        Book? bk = _bookRepository.GetById(id);
         if (bk is null)
         {
-            throw new Exception("Book does not exist");
+            throw new HttpRequestException("Book with that id does not exist", null, System.Net.HttpStatusCode.NotFound);
         }
-        var totalBorrowedCount = _borrowRecordRepository.CountByBorrowed(id);
-        var remainingAvailable = bk.TotalCopies - bk.AvailableCopies;
+        int totalBorrowedCount = _borrowRecordRepository.CountByBorrowed(id) ?? 0;
+        int remainingAvailable = bk.TotalCopies - bk.AvailableCopies;
 
         return new GetBookDetailsResponse
         {
@@ -83,7 +83,7 @@ public class BookService: IBookService
             Isbn = bk.Isbn,
             TotalCopies = bk.TotalCopies,
             AvailableCopies = bk.AvailableCopies,
-            TotalBorrowedCount = (int) totalBorrowedCount,
+            TotalBorrowedCount = totalBorrowedCount,
             RemainingAvailable = remainingAvailable
         };
     }
@@ -92,7 +92,7 @@ public class BookService: IBookService
         Book? bookUpdating = _bookRepository.GetById(id);
         if (bookUpdating is null)
         {
-            throw new Exception("Book does not exist");
+            throw new HttpRequestException("Book with that id does not exist", null, System.Net.HttpStatusCode.NotFound);
         }
 
         bookUpdating.Title = book.Title ?? bookUpdating.Title;
@@ -103,7 +103,7 @@ public class BookService: IBookService
 
         if (bookUpdating.AvailableCopies > bookUpdating.TotalCopies)
         {
-            throw new Exception("Total copies must be greater than or equal to available copies");
+            throw new HttpRequestException("Available copies cannot exceed total copies", null, System.Net.HttpStatusCode.BadRequest);
         }
 
         var updated = _bookRepository.Update(id, bookUpdating);

@@ -16,18 +16,26 @@ public class GlobalExceptionHandler : IExceptionHandler
     {
         _logger.LogError(
             exception, "Exception occurred: {Message}", exception.Message);
-
-        var problemDetails = new ProblemDetails
+        
+        if (exception is HttpRequestException httpEx)
         {
-            Status = StatusCodes.Status500InternalServerError,
-            Title = "Server error"
-        };
+            int? statusCode = (int)(httpEx.StatusCode ?? System.Net.HttpStatusCode.InternalServerError);
 
-        httpContext.Response.StatusCode = problemDetails.Status.Value;
+            var problemDetails = new ProblemDetails
+        
+            {
+                Status = statusCode,
+                // Title = "Server error",
+                Detail = httpEx.Message
+            };
 
-        await httpContext.Response
-            .WriteAsJsonAsync(problemDetails, cancellationToken);
+            httpContext.Response.StatusCode = problemDetails.Status.Value;
 
-        return true;
+            await httpContext.Response
+                .WriteAsJsonAsync(problemDetails, cancellationToken);
+
+            return true;
+        }
+        return false;        
     }
 }

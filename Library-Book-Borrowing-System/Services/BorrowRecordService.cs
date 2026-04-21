@@ -21,15 +21,14 @@ public class BorrowRecordService: IBorrowRecordService
         Guid memberId = borrowRecord.MemberId;
 
         Book? _book = _bookRepository.GetById(bookId);
-
         if (_book is null)
         {
-            throw new Exception("Book does not exist");
+            throw new HttpRequestException("Book with that id does not exist", null, System.Net.HttpStatusCode.NotFound);
         }
 
         if (_book.AvailableCopies <= 0)
         {
-            throw new Exception("Book has no copies available");
+            throw new HttpRequestException("Book does not have any copies available to borrow", null, System.Net.HttpStatusCode.Conflict);
         }
 
         BorrowRecord _borrowRecord = new BorrowRecord
@@ -64,7 +63,7 @@ public class BorrowRecordService: IBorrowRecordService
         Book? _book = _bookRepository.GetById(bookId);
         if (_book is null)
         {
-            throw new Exception("Book does not exist");
+            throw new HttpRequestException("Book with that id does not exist", null, System.Net.HttpStatusCode.NotFound);
         }
 
         // Get all borrowing records that match the book and are currently borrowed
@@ -75,7 +74,9 @@ public class BorrowRecordService: IBorrowRecordService
                 record.Status == "Borrowed"
             );
 
-        var _record = (_records?.ElementAt(0)) ?? throw new Exception("Member has not borrowed this book");
+        var _record = (_records?.ElementAt(0)) 
+            ?? throw new HttpRequestException("Member has not borrowed this book", null, System.Net.HttpStatusCode.Conflict);
+
         BorrowRecord _newRecord = new BorrowRecord
         {
             Id = _record.Id,

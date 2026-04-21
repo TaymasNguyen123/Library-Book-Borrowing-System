@@ -13,14 +13,8 @@ public class BooksController(IBookService bookService) : ControllerBase
     [HttpPost]
     public ActionResult<GetBookResponse> CreateBook(CreateBookRequest book)
     {
-        try
-        {
-            return Ok(bookService.CreateBook(book));
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(400, ex.Message);
-        }        
+        GetBookResponse? newBook = bookService.CreateBook(book);
+        return CreatedAtAction(nameof(CreateBook), new { id = newBook.Id }, newBook);
     }
 
     [HttpGet]
@@ -39,7 +33,8 @@ public class BooksController(IBookService bookService) : ControllerBase
     [HttpPut("{id:guid}")]
     public ActionResult<GetBookResponse> UpdateBook(Guid id, [FromBody] UpdateBookRequest newBook)
     {
-        return Ok(bookService.UpdateBook(id, newBook));
+        GetBookResponse? updatedBook = bookService.UpdateBook(id, newBook);
+        return Ok(updatedBook);
     }
 
     [HttpDelete("{id:guid}")]
