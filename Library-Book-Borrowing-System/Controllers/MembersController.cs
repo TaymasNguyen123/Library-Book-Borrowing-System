@@ -40,12 +40,6 @@ public class MembersController(IMemberService memberService): ControllerBase
     [HttpPut("{id:guid}")]
     public ActionResult<GetMemberResponse> UpdateMember(Guid id, [FromBody] UpdateMemberRequest newMember)
     {
-        Regex emailPattern = new Regex(@"\w+@\w+\.\w+");
-        if (newMember.Email is not null && !emailPattern.IsMatch(newMember.Email))
-        {
-            return BadRequest();
-        }
-
         GetMemberResponse? updatedMember = memberService.UpdateMember(id, newMember);
         return Ok(updatedMember);
     }

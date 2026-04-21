@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace Library_Book_Borrowing_System.Services;
 
 public class Helper
@@ -18,6 +20,17 @@ public class Helper
         }
 
         return sum % 10 == 0;
+    }
+
+    public static bool IsValidEmail(string email)
+    {
+        Regex emailPattern = new Regex(@"\w+@\w+\.\w+");
+        if (email is not null && !emailPattern.IsMatch(email))
+        {
+            return false;
+        }
+
+        return true;
     }
 }
 

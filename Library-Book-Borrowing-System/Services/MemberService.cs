@@ -1,6 +1,7 @@
 using Library_Book_Borrowing_System.Dtos;
 using Library_Book_Borrowing_System.Models;
 using Library_Book_Borrowing_System.Repositories;
+using Library_Book_Borrowing_System.GlobalException;
 
 namespace Library_Book_Borrowing_System.Services;
 
@@ -8,6 +9,12 @@ public class MemberService(IMemberRepository _memberRepository) : IMemberService
 {
     public GetMemberResponse CreateMember(CreateMemberRequest member)
     {
+        if (!Helper.IsValidEmail(member.Email))
+        {
+            throw new HttpRequestException(GlobalExceptionHandler.INVALID_EMAIL, null, System.Net.HttpStatusCode.BadRequest);
+        }
+
+
         Member member_ = new Member
         {
             Id = new Guid(),
