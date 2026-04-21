@@ -52,7 +52,22 @@ public class MemberService(IMemberRepository _memberRepository, IMemoryCache _ca
     }
     public Task<GetMemberResponse> GetMemberById(Guid id)
     {
-        Member? member_ = _memberRepository.GetById(id);
+        Member? member_;
+        if (_cacheGuid.TryGetValue(id, out GetMemberResponse? value))
+        {
+            member_ = new Member
+            {
+                Id = value.Id,
+                FullName = value.FullName,
+                Email = value.Email,
+                MembershipDate = value.MembershipDate
+            };
+        }
+        else
+        {
+            member_ = _memberRepository.GetById(id);
+        }
+
         if (member_ is null)
         {
             throw new HttpRequestException(GlobalExceptionHandler.MISSING_MEMBER_ID, null, System.Net.HttpStatusCode.NotFound);
