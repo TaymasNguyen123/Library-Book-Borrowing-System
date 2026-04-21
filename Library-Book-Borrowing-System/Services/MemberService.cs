@@ -40,7 +40,12 @@ public class MemberService(IMemberRepository _memberRepository) : IMemberService
     }
     public Task<GetMemberResponse> GetMemberById(Guid id)
     {
-        Member member_ = _memberRepository.GetById(id);
+        Member? member_ = _memberRepository.GetById(id);
+        if (member_ is null)
+        {
+            throw new HttpRequestException("Member with that id does not exist", null, System.Net.HttpStatusCode.NotFound);
+        }
+
         GetMemberResponse newMember = new GetMemberResponse
         {
             Id = member_.Id,
@@ -55,14 +60,14 @@ public class MemberService(IMemberRepository _memberRepository) : IMemberService
         Member? memberUpdating = _memberRepository.GetById(id);
         if (memberUpdating is null)
         {
-            throw new Exception("Member does not exist");
+            throw new HttpRequestException("Member with that id does not exist", null, System.Net.HttpStatusCode.NotFound);
         }
 
         memberUpdating.FullName = member.FullName ?? memberUpdating.FullName;
         memberUpdating.Email = member.Email ?? memberUpdating.Email;
         memberUpdating.BorrowRecords = member.BorrowRecords ?? memberUpdating.BorrowRecords;
 
-        Member updated = _memberRepository.Update(id, memberUpdating);
+        Member? updated = _memberRepository.Update(id, memberUpdating);
 
         return new GetMemberResponse
         {
