@@ -14,12 +14,6 @@ public class MembersController(IMemberService memberService): ControllerBase
     [HttpPost]
     public ActionResult<GetMemberResponse> CreateMember(CreateMemberRequest member)
     {
-        Regex emailPattern = new Regex(@"\w+@\w+\.\w+");
-        if (!emailPattern.IsMatch(member.Email))
-        {
-            return BadRequest();
-        }
-
         var newMember = memberService.CreateMember(member);
         return CreatedAtAction(nameof(CreateMember), new { id = newMember.Id }, newMember);
     }
@@ -40,12 +34,6 @@ public class MembersController(IMemberService memberService): ControllerBase
     [HttpPut("{id:guid}")]
     public ActionResult<GetMemberResponse> UpdateMember(Guid id, [FromBody] UpdateMemberRequest newMember)
     {
-        Regex emailPattern = new Regex(@"\w+@\w+\.\w+");
-        if (newMember.Email is not null && !emailPattern.IsMatch(newMember.Email))
-        {
-            return BadRequest();
-        }
-
         GetMemberResponse? updatedMember = memberService.UpdateMember(id, newMember);
         return Ok(updatedMember);
     }

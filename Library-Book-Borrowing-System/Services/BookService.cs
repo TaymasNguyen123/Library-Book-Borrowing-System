@@ -1,7 +1,7 @@
 using Library_Book_Borrowing_System.Dtos;
 using Library_Book_Borrowing_System.Models;
 using Library_Book_Borrowing_System.Repositories;
-
+using Library_Book_Borrowing_System.GlobalException;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace Library_Book_Borrowing_System.Services;
@@ -10,25 +10,30 @@ public class BookService: IBookService
 { 
     private readonly IBookRepository _bookRepository;
     private readonly IBorrowRecordRepository _borrowRecordRepository;
-    private readonly IMemoryCache _cache;
+    private readonly IMemoryCache _cacheGuid;
 
-    public BookService(IBookRepository bookRepository, IBorrowRecordRepository borrowRecordRepository, IMemoryCache cache)
+    public BookService(IBookRepository bookRepository, IBorrowRecordRepository borrowRecordRepository, IMemoryCache cacheGuid)
     {
         _bookRepository = bookRepository;
         _borrowRecordRepository = borrowRecordRepository;
-        _cache = cache;
+        _cacheGuid = cacheGuid;
     }
 
     public GetBookResponse CreateBook(CreateBookRequest book)
     {
         if (book.AvailableCopies > book.TotalCopies)
         {
-            throw new HttpRequestException("Available copies cannot exceed total copies", null, System.Net.HttpStatusCode.NotFound);
+            throw new HttpRequestException(GlobalExceptionHandler.MORE_AVAILABLE_THAN_TOTAL, null, System.Net.HttpStatusCode.NotFound);
         }
 
         if (!Helper.IsValidIsbn(book.Isbn))
         {
-            throw new HttpRequestException("ISBN is invalid", null, System.Net.HttpStatusCode.NotFound);
+            throw new HttpRequestException(GlobalExceptionHandler.INVALID_ISBN, null, System.Net.HttpStatusCode.NotFound);
+        }
+
+        if (GetAllBooks().Any(x => x.Isbn == book.Isbn))
+        {
+            throw new HttpRequestException(GlobalExceptionHandler.DUPLICATE_ISBN, null, System.Net.HttpStatusCode.BadRequest);
         }
 
         var bk = new Book
@@ -54,7 +59,7 @@ public class BookService: IBookService
             AvailableCopies = created.AvailableCopies
         };
 
-        _cache.Set(createdResponse.Id, createdResponse);
+        _cacheGuid.Set(createdResponse.Id, createdResponse);
 
         return createdResponse;
     }
@@ -76,7 +81,7 @@ public class BookService: IBookService
     {
 
         Book bk;
-        if (_cache.TryGetValue(id, out GetBookResponse? value))
+        if (_cacheGuid.TryGetValue(id, out GetBookResponse? value))
         {
             bk = new Book
             {
@@ -96,7 +101,7 @@ public class BookService: IBookService
 
         if (bk is null)
         {
-            throw new HttpRequestException("Book with that id does not exist", null, System.Net.HttpStatusCode.NotFound);
+            throw new HttpRequestException(GlobalExceptionHandler.MISSING_BOOK_ID, null, System.Net.HttpStatusCode.NotFound);
         }
 
         return new GetBookDetailsResponse
@@ -115,7 +120,23 @@ public class BookService: IBookService
         Book? bookUpdating = _bookRepository.GetById(id);
         if (bookUpdating is null)
         {
-            throw new HttpRequestException("Book with that id does not exist", null, System.Net.HttpStatusCode.NotFound);
+            throw new HttpRequestException(GlobalExceptionHandler.MISSING_BOOK_ID, null, System.Net.HttpStatusCode.NotFound);
+        }
+        
+        if (book.AvailableCopies > book.TotalCopies)
+        {
+            throw new HttpRequestException(GlobalExceptionHandler.MORE_AVAILABLE_THAN_TOTAL, null, System.Net.HttpStatusCode.NotFound);
+        }
+
+        if (!Helper.IsValidIsbn(book.Isbn))
+        {
+            throw new HttpRequestException(GlobalExceptionHandler.INVALID_ISBN, null, System.Net.HttpStatusCode.NotFound);
+        }
+
+        
+        if (GetAllBooks().Any(x => x.Isbn == book.Isbn && x.Id != bookUpdating.Id))
+        {
+            throw new HttpRequestException(GlobalExceptionHandler.DUPLICATE_ISBN, null, System.Net.HttpStatusCode.BadRequest);   
         }
 
         bookUpdating.Title = book.Title;
@@ -127,7 +148,7 @@ public class BookService: IBookService
 
         if (bookUpdating.AvailableCopies > bookUpdating.TotalCopies)
         {
-            throw new HttpRequestException("Available copies cannot exceed total copies", null, System.Net.HttpStatusCode.BadRequest);
+            throw new HttpRequestException(GlobalExceptionHandler.MORE_AVAILABLE_THAN_TOTAL, null, System.Net.HttpStatusCode.BadRequest);
         }
 
         var updated = _bookRepository.Update(id, bookUpdating);
@@ -143,13 +164,14 @@ public class BookService: IBookService
             BorrowedCount = updated.BorrowedCount
         };
 
-        _cache.Set(createdResponse.Id, createdResponse);
-
+        _cacheGuid.Set(createdResponse.Id, createdResponse);
+        
         return createdResponse;
     }
     public void DeleteBook(Guid id)
     {
-        _cache.Remove(id);
+        _cacheGuid.Remove(id);
+
         _bookRepository.Delete(id);
     }
 }

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Library_Book_Borrowing_System.Data;
+using Library_Book_Borrowing_System.GlobalException;
 
 var builder = WebApplication.CreateBuilder(args);
 
