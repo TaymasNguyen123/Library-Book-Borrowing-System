@@ -13,7 +13,14 @@ public class BooksController(IBookService bookService) : ControllerBase
     [HttpPost]
     public ActionResult<GetBookResponse> CreateBook(CreateBookRequest book)
     {
-        return bookService.CreateBook(book);
+        try
+        {
+            return Ok(bookService.CreateBook(book));
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(400, ex.Message);
+        }        
     }
 
     [HttpGet]

@@ -23,9 +23,10 @@ public class BookService: IBookService
         {
             throw new Exception("Total copies must be greater than or equal to available copies");
         }
-        if (_bookRepository.GetByTitle(book.Title) is not null)
+
+        if (!Helper.IsValidIsbn(book.Isbn))
         {
-            throw new Exception("Book with that title already exists");
+            throw new Exception("Invalid ISBN");
         }
 
         var bk = new Book
