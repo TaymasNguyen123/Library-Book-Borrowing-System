@@ -22,6 +22,7 @@ builder.Services.AddScoped<Library_Book_Borrowing_System.Repositories.IMemberRep
 builder.Services.AddScoped<Library_Book_Borrowing_System.Services.IBorrowRecordService, Library_Book_Borrowing_System.Services.BorrowRecordService>();
 builder.Services.AddScoped<Library_Book_Borrowing_System.Repositories.IBorrowRecordRepository, Library_Book_Borrowing_System.Repositories.BorrowRecordRepository>();
 
+builder.Services.AddMemoryCache();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

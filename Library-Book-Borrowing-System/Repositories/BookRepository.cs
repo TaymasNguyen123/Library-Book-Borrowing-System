@@ -38,6 +38,7 @@ public class BookRepository(Database database) : IBookRepository
             findBook.Isbn = book.Isbn;
             findBook.TotalCopies = book.TotalCopies;
             findBook.AvailableCopies = book.AvailableCopies;
+            findBook.BorrowedCount = book.BorrowedCount;
 
             database.SaveChanges();
         }
