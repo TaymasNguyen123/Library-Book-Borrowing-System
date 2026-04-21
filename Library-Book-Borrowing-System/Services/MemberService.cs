@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using Library_Book_Borrowing_System.Dtos;
 using Library_Book_Borrowing_System.Models;
 using Library_Book_Borrowing_System.Repositories;
@@ -9,12 +8,6 @@ public class MemberService(IMemberRepository _memberRepository) : IMemberService
 {
     public GetMemberResponse CreateMember(CreateMemberRequest member)
     {
-        Regex emailPattern = new Regex(@"\w+@\w+\.\w+");
-        if (!emailPattern.IsMatch(member.Email))
-        {
-            throw new HttpRequestException("Email is invalid", null, System.Net.HttpStatusCode.BadRequest);
-        }
-
         Member member_ = new Member
         {
             Id = new Guid(),
