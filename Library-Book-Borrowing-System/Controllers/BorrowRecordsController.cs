@@ -11,14 +11,14 @@ namespace Library_Book_Borrowing_System.Controllers;
 
 public class BorrowRecordsController(IBorrowRecordService borrowRecordService): ControllerBase
 {
-    [HttpPost]
+    [HttpPost("borrow")]
     public ActionResult<GetBorrowRecordResponse> BorrowBook(CreateBorrowRecordRequest borrowRecord)
     {
         GetBorrowRecordResponse? newBorrowRecord = borrowRecordService.BorrowBook(borrowRecord);
         return CreatedAtAction(nameof(BorrowBook), new { id = newBorrowRecord.Id }, newBorrowRecord);
     }
 
-    [HttpPut]
+    [HttpPut("return")]
     public ActionResult<GetBorrowRecordResponse> ReturnBook(UpdateBorrowRecordRequest borrowRecord)
     {
         GetBorrowRecordResponse? updatedBorrowRecord = borrowRecordService.ReturnBook(borrowRecord);

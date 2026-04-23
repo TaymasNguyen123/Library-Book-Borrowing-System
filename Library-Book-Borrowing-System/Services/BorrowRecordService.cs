@@ -11,6 +11,7 @@ public class BorrowRecordService: IBorrowRecordService
 {
     private readonly IBorrowRecordRepository _borrowRecordRepository;
     private readonly IBookRepository _bookRepository;
+    private readonly IMemberRepository _memberRepository;
     private readonly IMemoryCache _cache;
     private readonly MemoryCacheEntryOptions _cacheOptions = new MemoryCacheEntryOptions
     {
@@ -21,11 +22,13 @@ public class BorrowRecordService: IBorrowRecordService
     public BorrowRecordService(
         IBorrowRecordRepository borrowRecordRepository, 
         IBookRepository bookRepository,
+        IMemberRepository memberRepository,
         IMemoryCache cache
     )
     {
         _borrowRecordRepository = borrowRecordRepository;
         _bookRepository = bookRepository;
+        _memberRepository = memberRepository;
         _cache = cache;
     }
     public GetBorrowRecordResponse BorrowBook(CreateBorrowRecordRequest borrowRecord)
@@ -34,14 +37,21 @@ public class BorrowRecordService: IBorrowRecordService
         Guid memberId = borrowRecord.MemberId;
 
         Book? _book = _bookRepository.GetById(bookId);
+        Member? _member = _memberRepository.GetById(memberId);
+
         if (_book is null)
         {
             throw new HttpRequestException(GlobalExceptionHandler.MISSING_BOOK_ID, null, System.Net.HttpStatusCode.NotFound);
         }
 
+        if (_member is null)
+        {
+            throw new HttpRequestException(GlobalExceptionHandler.MISSING_MEMBER_ID, null, System.Net.HttpStatusCode.NotFound);
+        }
+
         if (_book.AvailableCopies <= 0)
         {
-            throw new HttpRequestException(GlobalExceptionHandler.MORE_AVAILABLE_THAN_TOTAL, null, System.Net.HttpStatusCode.Conflict);
+            throw new HttpRequestException(GlobalExceptionHandler.ZERO_COPIES_AVAILABLE, null, System.Net.HttpStatusCode.Conflict);
         }
 
 
@@ -126,11 +136,6 @@ public class BorrowRecordService: IBorrowRecordService
     }
     public IEnumerable<GetBorrowRecordResponse> GetAllRecords()
     {
-        if (_cache.TryGetValue("record:list", out IEnumerable<GetBorrowRecordResponse>? records))
-        {
-            return records;
-        }
-
         IEnumerable<GetBorrowRecordResponse>? responses = _borrowRecordRepository.GetAll()
             .Select(record => new GetBorrowRecordResponse
             {

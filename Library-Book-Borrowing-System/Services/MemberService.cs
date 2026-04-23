@@ -30,7 +30,7 @@ public class MemberService(IMemberRepository _memberRepository, IMemoryCache _ca
             Id = new Guid(),
             FullName = member.FullName,
             Email = member.Email,
-            MembershipDate = DateTime.Now,
+            MembershipDate = DateTime.Now.ToString("MM/dd/yyyy"),
             BorrowRecords = new List<BorrowRecord>()
         };
 
@@ -52,6 +52,7 @@ public class MemberService(IMemberRepository _memberRepository, IMemoryCache _ca
                 Id = member.Id,
                 FullName = member.FullName,
                 Email = member.Email,
+                MembershipDate = member.MembershipDate,
                 BorrowRecords = member.BorrowRecords
             });
         

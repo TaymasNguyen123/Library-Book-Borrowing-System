@@ -66,10 +66,6 @@ public class BookService: IBookService
     }
     public IEnumerable<GetBookResponse> GetAllBooks()
     {
-        if (_cache.TryGetValue("book:list", out IEnumerable<GetBookResponse>? list)) {
-            return list;
-        }
-
         IEnumerable<GetBookResponse> bookList = _bookRepository.GetAll()
             .Select(bk => new GetBookResponse
             {
