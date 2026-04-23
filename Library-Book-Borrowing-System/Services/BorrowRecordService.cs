@@ -15,8 +15,8 @@ public class BorrowRecordService: IBorrowRecordService
     private readonly IMemoryCache _cache;
     private readonly MemoryCacheEntryOptions _cacheOptions = new MemoryCacheEntryOptions
     {
-        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5),
-        SlidingExpiration = TimeSpan.FromMinutes(2)    
+        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2),
+        SlidingExpiration = TimeSpan.FromSeconds(30)    
     };
 
     public BorrowRecordService(
@@ -78,9 +78,11 @@ public class BorrowRecordService: IBorrowRecordService
             Status = "Borrowed"
         };
         _borrowRecordRepository.Borrow(_borrowRecord);
+        _cache.Remove("record:list");
 
         _book.AvailableCopies--;
         _bookRepository.Update(bookId, _book);
+        _cache.Remove($"book:{bookId}");
 
         return new GetBorrowRecordResponse
         {
@@ -120,9 +122,11 @@ public class BorrowRecordService: IBorrowRecordService
         _record.Status = "Returned";
 
         BorrowRecord returned = _borrowRecordRepository.Return(_record);
+        _cache.Remove("record:list");
 
         _book.AvailableCopies++;
         _bookRepository.Update(bookId, _book);
+        _cache.Remove($"book:{bookId}");
 
         return new GetBorrowRecordResponse
         {
@@ -136,6 +140,11 @@ public class BorrowRecordService: IBorrowRecordService
     }
     public IEnumerable<GetBorrowRecordResponse> GetAllRecords()
     {
+        if (_cache.TryGetValue("record:list", out IEnumerable<GetBorrowRecordResponse>? list))
+        {
+            return list;
+        }
+
         IEnumerable<GetBorrowRecordResponse>? responses = _borrowRecordRepository.GetAll()
             .Select(record => new GetBorrowRecordResponse
             {

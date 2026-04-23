@@ -13,8 +13,8 @@ public class BookService: IBookService
     private readonly IMemoryCache _cache;
     private readonly MemoryCacheEntryOptions _cacheOptions = new MemoryCacheEntryOptions
     {
-        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5),
-        SlidingExpiration = TimeSpan.FromMinutes(2)
+        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2),
+        SlidingExpiration = TimeSpan.FromSeconds(30)
     };
 
     public BookService(IBookRepository bookRepository, IBorrowRecordRepository borrowRecordRepository, IMemoryCache cache)
@@ -53,6 +53,7 @@ public class BookService: IBookService
         };
 
         var created = _bookRepository.Add(bk);
+        _cache.Remove("book:list");
 
         return new GetBookResponse
         {
@@ -66,6 +67,10 @@ public class BookService: IBookService
     }
     public IEnumerable<GetBookResponse> GetAllBooks()
     {
+        if (_cache.TryGetValue("book:list", out IEnumerable<GetBookResponse>? list)) {
+            return list;
+        }
+
         IEnumerable<GetBookResponse> bookList = _bookRepository.GetAll()
             .Select(bk => new GetBookResponse
             {

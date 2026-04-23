@@ -10,8 +10,8 @@ public class MemberService(IMemberRepository _memberRepository, IMemoryCache _ca
 {
     private readonly MemoryCacheEntryOptions _cacheOptions = new MemoryCacheEntryOptions
     {
-        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5),
-        SlidingExpiration = TimeSpan.FromMinutes(2)        
+        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2),
+        SlidingExpiration = TimeSpan.FromSeconds(30)        
     };
     public GetMemberResponse CreateMember(CreateMemberRequest member)
     {
@@ -35,6 +35,7 @@ public class MemberService(IMemberRepository _memberRepository, IMemoryCache _ca
         };
 
         _memberRepository.Add(newMember);
+        _cache.Remove("member:list");
 
         return new GetMemberResponse
         {
@@ -46,6 +47,11 @@ public class MemberService(IMemberRepository _memberRepository, IMemoryCache _ca
     }
     public IEnumerable<GetMemberResponse> GetAllMembers()
     {
+        if (_cache.TryGetValue("member:list", out IEnumerable<GetMemberResponse>? list))
+        {
+            return list;
+        }
+        
         IEnumerable<GetMemberResponse> memberList = _memberRepository.GetAll()
             .Select(member => new GetMemberResponse
             {
