@@ -6,7 +6,6 @@ public class Helper
 {
     public static bool IsValidIsbn(string isbn)
     {
-        return true;
         isbn = isbn.Replace("-", "");
         if (!isbn.All(char.IsDigit) || !(isbn.Substring(0, 3) == "978" || isbn.Substring(0, 3) == "979") || isbn.Length != 13)
         {
