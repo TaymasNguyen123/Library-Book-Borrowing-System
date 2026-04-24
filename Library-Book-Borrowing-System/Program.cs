@@ -100,7 +100,7 @@ if (app.Environment.IsDevelopment())
 
     _bookRepository.Add(new Book
     {
-        Id = new Guid(),
+        Id = new Guid("593d8150-b074-401e-b606-0ad6f9755510"),
         Title = "Heated Rivalry",
         Author = "Rachel Reid",
         Isbn = "9786567364564",
@@ -111,7 +111,7 @@ if (app.Environment.IsDevelopment())
 
     _bookRepository.Add(new Book
     {
-        Id = new Guid(),
+        Id = new Guid("593d8150-b074-401e-b606-0ad6f9755520"),
         Title = "Project Hail Mary",
         Author = "Andy Weir",
         Isbn = "9787665774323",
@@ -122,7 +122,7 @@ if (app.Environment.IsDevelopment())
 
     _bookRepository.Add(new Book
     {
-        Id = new Guid(),
+        Id = new Guid("593d8150-b074-401e-b606-0ad6f9755530"),
         Title = "Fifty Shades of Grey",
         Author = "E. L. James",
         Isbn = "9782117184897",
@@ -134,6 +134,7 @@ if (app.Environment.IsDevelopment())
 
     _memberRepository.Add(new Member
     {
+        Id = new Guid("593d8150-b074-401e-b606-0ad6f9755501"),
         FullName = "Taylor Alison Swift Kelce",
         Email = "taylorswift@gmail.com",
         MembershipDate = DateTime.Now.AddYears(-1).ToString("MM/dd/yyyy"),
@@ -142,6 +143,7 @@ if (app.Environment.IsDevelopment())
 
     _memberRepository.Add(new Member
     {
+        Id = new Guid("593d8150-b074-401e-b606-0ad6f9755502"),
         FullName = "Dobby Bellatrix",
         Email = "meow@yahoo.com",
         MembershipDate = DateTime.Now.AddMonths(-4).ToString("MM/dd/yyyy"),
@@ -150,6 +152,7 @@ if (app.Environment.IsDevelopment())
 
     _memberRepository.Add(new Member
     {
+        Id = new Guid("593d8150-b074-401e-b606-0ad6f9755503"),
         FullName = "Tuffy",
         Email = "elephant@csu.fullerton.edu",
         MembershipDate = DateTime.Now.ToString("MM/dd/yyyy"),
