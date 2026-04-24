@@ -102,7 +102,7 @@ public class BorrowRecordService: IBorrowRecordService
     
         _memberRepository.Update(memberId, new Member{
             Id = memberId,
-            FullName = "ASDSAD",
+            FullName = _member.FullName,
             Email = _member.Email,
             BorrowRecords = _member.BorrowRecords,
         });
