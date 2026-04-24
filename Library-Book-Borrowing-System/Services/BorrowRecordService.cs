@@ -86,8 +86,27 @@ public class BorrowRecordService: IBorrowRecordService
         _cache.Remove("record:list");
 
         _book.AvailableCopies--;
+        _book.BorrowedCount++;
         _bookRepository.Update(bookId, _book);
         _cache.Remove($"book:{bookId}");
+
+        _member.BorrowRecords.Add(new BorrowRecord
+        {
+            Id = _borrowRecord.Id,
+            BookId = bookId,
+            MemberId = memberId,
+            BorrowDate = _borrowRecord.BorrowDate,
+            ReturnDate = null,
+            Status = _borrowRecord.Status
+        });
+    
+        _memberRepository.Update(memberId, new Member{
+            Id = memberId,
+            FullName = _member.FullName,
+            Email = _member.Email,
+            BorrowRecords = _member.BorrowRecords,
+        });
+
 
         return new GetBorrowRecordResponse
         {
