@@ -3,11 +3,13 @@ using Library_Book_Borrowing_System.Dtos;
 using Library_Book_Borrowing_System.Models;
 using Library_Book_Borrowing_System.Services;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Library_Book_Borrowing_System.Controllers;
 
 [ApiController]
 [Route("api/members")]
+[Authorize]
 
 public class MembersController(IMemberService memberService): ControllerBase
 {

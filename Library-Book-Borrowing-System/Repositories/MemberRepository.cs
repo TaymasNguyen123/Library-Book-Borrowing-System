@@ -23,6 +23,16 @@ public class MemberRepository(Database database) : IMemberRepository
         return database.Members.AsNoTracking().FirstOrDefault(member => member.Id == id);
     }
 
+    public Task<Member?> GetByEmailAsync(string email)
+    {
+        return database.Members.FirstOrDefaultAsync(u => u.Email == email);
+    }
+
+    public Task<bool> EmailExistsAsync(string email)
+    {
+        return database.Members.AnyAsync(u => u.Email == email);
+    }
+
     public Member? Update(Guid id, Member member)
     {
         Member? findMember = GetById(id);

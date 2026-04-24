@@ -3,16 +3,32 @@ using Library_Book_Borrowing_System.Models;
 using Library_Book_Borrowing_System.Repositories;
 using Library_Book_Borrowing_System.GlobalException;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.AspNetCore.Identity;
 
 namespace Library_Book_Borrowing_System.Services;
 
-public class MemberService(IMemberRepository _memberRepository, IMemoryCache _cache) : IMemberService
+public class MemberService: IMemberService
 {
+    private readonly IMemberRepository _memberRepository;
+    private readonly IMemoryCache _cache;
+    private readonly IPasswordHasher<Member> _passwordHasher;
+    public MemberService(
+        IMemberRepository memberRepository, 
+        IMemoryCache cache,
+        IPasswordHasher<Member> passwordHasher
+    )
+    {
+        _memberRepository = memberRepository;
+        _cache = cache;
+        _passwordHasher = passwordHasher;
+    }
+
     private readonly MemoryCacheEntryOptions _cacheOptions = new MemoryCacheEntryOptions
     {
         AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2),
         SlidingExpiration = TimeSpan.FromSeconds(30)        
     };
+
     public GetMemberResponse CreateMember(CreateMemberRequest member)
     {
         if (!Helper.IsValidEmail(member.Email))
@@ -33,6 +49,7 @@ public class MemberService(IMemberRepository _memberRepository, IMemoryCache _ca
             MembershipDate = DateTime.Now.ToString("MM/dd/yyyy"),
             BorrowRecords = new List<BorrowRecord>()
         };
+        newMember.PasswordHash = _passwordHasher.HashPassword(newMember, member.Password);
 
         _memberRepository.Add(newMember);
         _cache.Remove("member:list");

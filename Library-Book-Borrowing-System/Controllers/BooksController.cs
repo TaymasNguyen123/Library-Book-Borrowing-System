@@ -3,11 +3,13 @@ using Library_Book_Borrowing_System.Dtos;
 using Library_Book_Borrowing_System.Models;
 using Library_Book_Borrowing_System.Services;
 using System.Runtime.InteropServices;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Library_Book_Borrowing_System.Controllers;
 
 [ApiController]
 [Route("api/books")]
+[Authorize]
 public class BooksController(IBookService bookService) : ControllerBase
 {
     [HttpPost]
@@ -17,12 +19,14 @@ public class BooksController(IBookService bookService) : ControllerBase
         return CreatedAtAction(nameof(CreateBook), new { id = newBook.Id }, newBook);
     }
 
+    [AllowAnonymous]
     [HttpGet]
     public ActionResult<IEnumerable<GetBookResponse>> GetAllBooks()
     {
         return Ok(bookService.GetAllBooks());
     }
 
+    [AllowAnonymous]
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<GetBookDetailsResponse>> GetBookById(Guid id)
     {
