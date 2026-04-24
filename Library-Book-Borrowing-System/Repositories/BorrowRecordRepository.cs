@@ -16,6 +16,7 @@ public class BorrowRecordRepository(Database database) : IBorrowRecordRepository
 
         if (rowsAffected == 0) return null;
 
+        database.Entry(borrowRecord).State = EntityState.Modified;
         database.BorrowRecords.Add(borrowRecord);
         database.SaveChanges();
         return borrowRecord;
@@ -35,6 +36,7 @@ public class BorrowRecordRepository(Database database) : IBorrowRecordRepository
             _record.ReturnDate = borrowRecord.ReturnDate;
             _record.Status = "Returned";
             
+            database.Entry(borrowRecord).State = EntityState.Modified;
             database.SaveChanges();
         }
         return borrowRecord;

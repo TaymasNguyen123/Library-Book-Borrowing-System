@@ -12,6 +12,7 @@ public class BorrowRecordService: IBorrowRecordService
     private readonly IBorrowRecordRepository _borrowRecordRepository;
     private readonly IBookRepository _bookRepository;
     private readonly IMemberRepository _memberRepository;
+    private readonly IMemberService _memberService;
     private readonly IMemoryCache _cache;
     private readonly MemoryCacheEntryOptions _cacheOptions = new MemoryCacheEntryOptions
     {
@@ -73,7 +74,7 @@ public class BorrowRecordService: IBorrowRecordService
             Id = new Guid(),
             BookId = bookId,
             MemberId = memberId,
-            BorrowDate = DateTime.Now,
+            BorrowDate = DateTime.Now.ToString("MM/dd/yyyy"),
             ReturnDate = null,
             Status = "Borrowed"
         };
@@ -101,12 +102,14 @@ public class BorrowRecordService: IBorrowRecordService
         });
     
         _memberRepository.Update(memberId, new Member{
-            Id = memberId,
+            Id = _member.Id,
             FullName = _member.FullName,
             Email = _member.Email,
-            BorrowRecords = _member.BorrowRecords,
+            BorrowRecords = _member.BorrowRecords
         });
 
+        Console.WriteLine("1debug");
+        Console.WriteLine(_member.BorrowRecords.ElementAt(0).Status);
 
         return new GetBorrowRecordResponse
         {
@@ -124,6 +127,8 @@ public class BorrowRecordService: IBorrowRecordService
         Guid memberId = borrowRecord.MemberId;
 
         Book? _book = _bookRepository.GetById(bookId);
+        Member? _member = _memberRepository.GetById(memberId);
+
         if (_book is null)
         {
             throw new HttpRequestException(GlobalExceptionHandler.MISSING_BOOK_ID, null, System.Net.HttpStatusCode.NotFound);
@@ -136,13 +141,13 @@ public class BorrowRecordService: IBorrowRecordService
                 record.MemberId == memberId &&
                 record.Status == "Borrowed"
             );
-        if (_records is null || _records.Count() > 0)
+        if (_records is null || _records.Count() == 0)
         {
             throw new HttpRequestException(GlobalExceptionHandler.MISSING_BORROW_RECORD, null, System.Net.HttpStatusCode.Conflict);
         }
         var _record = _records.ElementAt(0);
         
-        _record.ReturnDate = DateTime.Now;
+        _record.ReturnDate = DateTime.Now.ToString("MM/dd/yyyy");
         _record.Status = "Returned";
 
         BorrowRecord returned = _borrowRecordRepository.Return(_record);
@@ -151,6 +156,15 @@ public class BorrowRecordService: IBorrowRecordService
         _book.AvailableCopies++;
         _bookRepository.Update(bookId, _book);
         _cache.Remove($"book:{bookId}");
+
+        _member.BorrowRecords.Remove(returned);
+    
+        _memberRepository.Update(memberId, new Member{
+            Id = _member.Id,
+            FullName = _member.FullName,
+            Email = _member.Email,
+            BorrowRecords = _member.BorrowRecords
+        });
 
         return new GetBorrowRecordResponse
         {

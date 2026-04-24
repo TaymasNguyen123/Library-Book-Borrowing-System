@@ -15,7 +15,7 @@ public class MemberRepository(Database database) : IMemberRepository
 
     public IEnumerable<Member> GetAll()
     {
-        return database.Members.AsNoTracking().ToList();
+        return database.Members.Include(p => p.BorrowRecords).AsNoTracking().ToList();
     }
 
     public Member? GetById(Guid id)

@@ -31,7 +31,7 @@ public class MembersController(IMemberService memberService): ControllerBase
         return Ok(_member);
     }
 
-    [HttpPut("{id:guid}")]
+    [HttpPut("{id:guid}")] 
     public ActionResult<GetMemberResponse> UpdateMember(Guid id, [FromBody] UpdateMemberRequest newMember)
     {
         GetMemberResponse? updatedMember = memberService.UpdateMember(id, newMember);
