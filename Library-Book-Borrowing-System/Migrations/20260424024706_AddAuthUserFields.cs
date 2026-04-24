@@ -11,7 +11,7 @@ namespace Library_Book_Borrowing_System.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<string>(
-                name: "PasswordHash",
+                name: "Role",
                 table: "Members",
                 type: "TEXT",
                 nullable: false,
@@ -22,7 +22,7 @@ namespace Library_Book_Borrowing_System.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "PasswordHash",
+                name: "Role",
                 table: "Members");
         }
     }

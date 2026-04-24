@@ -20,7 +20,7 @@ public class MemberRepository(Database database) : IMemberRepository
 
     public Member? GetById(Guid id)
     {
-        return database.Members.AsNoTracking().FirstOrDefault(member => member.Id == id);
+        return database.Members.FirstOrDefault(member => member.Id == id);
     }
 
     public Task<Member?> GetByEmailAsync(string email)
@@ -35,17 +35,14 @@ public class MemberRepository(Database database) : IMemberRepository
 
     public Member? Update(Guid id, Member member)
     {
-        Member? findMember = GetById(id);
-        if (findMember is not null)
-        {
-            findMember.FullName = member.FullName;
-            findMember.Email = member.Email;
-            findMember.BorrowRecords = member.BorrowRecords;
-            
-            database.Entry(findMember).State = EntityState.Modified;
-            database.SaveChanges();
-        }
-        return findMember;
+        Member? found = GetById(id);
+        if (found is null)
+            return null;
+
+        database.Entry(found).CurrentValues.SetValues(member);        
+        database.SaveChanges();
+
+        return found;
     }
 
     public void Delete(Guid id)

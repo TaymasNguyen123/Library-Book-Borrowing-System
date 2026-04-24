@@ -4,6 +4,7 @@ using Library_Book_Borrowing_System.Repositories;
 using Library_Book_Borrowing_System.GlobalException;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.AspNetCore.Identity;
+using System.Security.Claims;
 
 namespace Library_Book_Borrowing_System.Services;
 
@@ -12,15 +13,18 @@ public class MemberService: IMemberService
     private readonly IMemberRepository _memberRepository;
     private readonly IMemoryCache _cache;
     private readonly IPasswordHasher<Member> _passwordHasher;
+    private readonly IAuthService _authService;
     public MemberService(
         IMemberRepository memberRepository, 
         IMemoryCache cache,
-        IPasswordHasher<Member> passwordHasher
+        IPasswordHasher<Member> passwordHasher,
+        IAuthService authService
     )
     {
         _memberRepository = memberRepository;
         _cache = cache;
         _passwordHasher = passwordHasher;
+        _authService = authService;
     }
 
     private readonly MemoryCacheEntryOptions _cacheOptions = new MemoryCacheEntryOptions
@@ -43,9 +47,10 @@ public class MemberService: IMemberService
 
         Member newMember = new Member
         {
-            Id = new Guid(),
+            Id = Guid.NewGuid(),
             FullName = member.FullName,
             Email = member.Email,
+            Role = "User",
             MembershipDate = DateTime.Now.ToString("MM/dd/yyyy"),
             BorrowRecords = new List<BorrowRecord>()
         };
@@ -59,7 +64,8 @@ public class MemberService: IMemberService
             Id = newMember.Id,
             FullName = newMember.FullName,
             Email = newMember.Email,
-            MembershipDate = newMember.MembershipDate
+            MembershipDate = newMember.MembershipDate,
+            Role = newMember.Role
         };
     }
     public IEnumerable<GetMemberResponse> GetAllMembers()
@@ -76,7 +82,8 @@ public class MemberService: IMemberService
                 FullName = member.FullName,
                 Email = member.Email,
                 MembershipDate = member.MembershipDate,
-                BorrowRecords = member.BorrowRecords
+                BorrowRecords = member.BorrowRecords,
+                Role = member.Role
             });
         
         _cache.Set("member:list", memberList, _cacheOptions);
@@ -98,7 +105,8 @@ public class MemberService: IMemberService
             Id = _member.Id,
             FullName = _member.FullName,
             Email = _member.Email,
-            MembershipDate = _member.MembershipDate
+            MembershipDate = _member.MembershipDate,
+            Role = _member.Role
         };
 
         _cache.Set($"member:{response.Id}", response, _cacheOptions);
@@ -136,11 +144,13 @@ public class MemberService: IMemberService
             Id = id,
             FullName = updated.FullName,
             Email = updated.Email,
-            BorrowRecords = updated.BorrowRecords
+            BorrowRecords = updated.BorrowRecords,
+            MembershipDate = updated.MembershipDate,
+            Role = updated.Role
         };
     }
     public void DeleteMember(Guid id)
-    {
+    {        
         _cache.Remove($"member:{id}");
         _cache.Remove("member:list");
 

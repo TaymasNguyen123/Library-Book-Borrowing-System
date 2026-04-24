@@ -9,11 +9,14 @@ namespace Library_Book_Borrowing_System.Controllers;
 [ApiController]
 [Route("api/borrowrecord")]
 
-public class BorrowRecordsController(IBorrowRecordService borrowRecordService): ControllerBase
+public class BorrowRecordsController(IBorrowRecordService borrowRecordService, AuthHelper _authHelper): ControllerBase
 {
     [HttpPost("borrow")]
     public ActionResult<GetBorrowRecordResponse> BorrowBook(CreateBorrowRecordRequest borrowRecord)
     {
+        Guid memberId = borrowRecord.MemberId;
+        if (!_authHelper.isSelf(memberId)) return Forbid();
+
         GetBorrowRecordResponse? newBorrowRecord = borrowRecordService.BorrowBook(borrowRecord);
         return CreatedAtAction(nameof(BorrowBook), new { id = newBorrowRecord.Id }, newBorrowRecord);
     }
@@ -21,6 +24,9 @@ public class BorrowRecordsController(IBorrowRecordService borrowRecordService): 
     [HttpPut("return")]
     public ActionResult<GetBorrowRecordResponse> ReturnBook(UpdateBorrowRecordRequest borrowRecord)
     {
+        Guid memberId = borrowRecord.MemberId;
+        if (!_authHelper.isSelf(memberId)) return Forbid();
+
         GetBorrowRecordResponse? updatedBorrowRecord = borrowRecordService.ReturnBook(borrowRecord);
         return Ok(updatedBorrowRecord);
     }
@@ -28,12 +34,16 @@ public class BorrowRecordsController(IBorrowRecordService borrowRecordService): 
     [HttpGet]
     public ActionResult<GetBorrowRecordResponse> GetAllRecords()
     {
+        if (!_authHelper.isAdmin()) return Forbid();
+
         return Ok(borrowRecordService.GetAllRecords());
     }
 
     [HttpGet("{memberId:guid}")]
     public ActionResult<IEnumerable<GetBorrowRecordResponse>> GetAllRecordsByMember(Guid memberId)
     {
+        if (!_authHelper.isSelfOrAdmin(memberId)) return Forbid();
+
         IEnumerable<GetBorrowRecordResponse>? memberRecords = borrowRecordService.GetAllRecordsByMember(memberId);
         return Ok(memberRecords);
     }

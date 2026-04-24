@@ -28,8 +28,8 @@ public class AuthController : ControllerBase
         if (request.Password.Length < 8)
             return BadRequest("Password must be at least 8 characters.");
 
-        var (response, error) = await _authService.RegisterAsync(request);
-        if (response is null) return Conflict(error);
+        var response = await _authService.RegisterAsync(request);
+        if (response is null) return Conflict();
         return Ok(response);
     }
 
@@ -45,7 +45,7 @@ public class AuthController : ControllerBase
         var response = await _authService.LoginAsync(request);
         if (response is null)
             return Unauthorized("Invalid email or password.");
-            
+
         return Ok(response);
     }
 }

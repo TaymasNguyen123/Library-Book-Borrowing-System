@@ -8,6 +8,12 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi.Models;
+using Library_Book_Borrowing_System.Services;
+using Library_Book_Borrowing_System.Settings;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
+using Microsoft.OpenApi.Writers;
+using Microsoft.Extensions.Options;
+using Library_Book_Borrowing_System.Dtos;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -57,6 +63,7 @@ builder.Services.AddScoped<Library_Book_Borrowing_System.Repositories.IMemberRep
 builder.Services.AddScoped<Library_Book_Borrowing_System.Services.IBorrowRecordService, Library_Book_Borrowing_System.Services.BorrowRecordService>();
 builder.Services.AddScoped<Library_Book_Borrowing_System.Repositories.IBorrowRecordRepository, Library_Book_Borrowing_System.Repositories.BorrowRecordRepository>();
 builder.Services.AddScoped<Library_Book_Borrowing_System.Services.IAuthService, Library_Book_Borrowing_System.Services.AuthService>();
+builder.Services.AddScoped<Library_Book_Borrowing_System.Services.AuthHelper>();
 
 builder.Services.AddMemoryCache();
 
@@ -91,10 +98,17 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {   
-    var db = app.Services.CreateScope().ServiceProvider.GetRequiredService<Database>();
+    var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<Database>();
+    var services = scope.ServiceProvider;
+    
+    var hasher = services.GetRequiredService<IPasswordHasher<Member>>();
+    var jwtOptions = services.GetRequiredService<IOptions<JwtSettings>>();
 
     BookRepository _bookRepository = new BookRepository(db);
     MemberRepository _memberRepository = new MemberRepository(db);
+    AuthService _authService = new AuthService(_memberRepository, hasher, jwtOptions);
+
     db.Database.EnsureDeleted();
     db.Database.EnsureCreated();
 
@@ -131,34 +145,43 @@ if (app.Environment.IsDevelopment())
         BorrowedCount = 0,
     });
 
+    IEnumerable<RegisterRequest> registerRequests = [
+        new RegisterRequest {
+            FullName = "Test User",
+            Email = "user@email.com",
+            Password = "user"
+        },
+        new RegisterRequest {
+            FullName = "Test Admin",
+            Email = "admin@email.com",
+            Password = "admin"
+        },
+        new RegisterRequest {
+            FullName = "Taylor Alison Swift Kelce",
+            Email = "taylorswift@gmail.com",
+            Password = "iamtaylorswift"
+        },
+        new RegisterRequest {
+            FullName = "Dobby Bellatrix",
+            Email = "meow@yahoo.com",
+            Password = "meowmeowmeow"
+        },
+        new RegisterRequest {
+            FullName = "Tuffy",
+            Email = "elephant@csu.fullerton.edu",
+            Password = "tuffythetitan123"
+        }
+    ];
 
-    _memberRepository.Add(new Member
+    foreach (var req in registerRequests)
     {
-        Id = new Guid("593d8150-b074-401e-b606-0ad6f9755501"),
-        FullName = "Taylor Alison Swift Kelce",
-        Email = "taylorswift@gmail.com",
-        MembershipDate = DateTime.Now.AddYears(-1).ToString("MM/dd/yyyy"),
-        BorrowRecords = new List<BorrowRecord>()
-    });
+        AuthResponse? res = await _authService.RegisterAsync(req);
+        if (res is not null && res.Email == "admin@email.com")
+        {
+            res = _authService.UpdateMemberRole(res.MemberId, "Admin");
+        }
+    }
 
-    _memberRepository.Add(new Member
-    {
-        Id = new Guid("593d8150-b074-401e-b606-0ad6f9755502"),
-        FullName = "Dobby Bellatrix",
-        Email = "meow@yahoo.com",
-        MembershipDate = DateTime.Now.AddMonths(-4).ToString("MM/dd/yyyy"),
-        BorrowRecords = new List<BorrowRecord>()
-    });
-
-    _memberRepository.Add(new Member
-    {
-        Id = new Guid("593d8150-b074-401e-b606-0ad6f9755503"),
-        FullName = "Tuffy",
-        Email = "elephant@csu.fullerton.edu",
-        MembershipDate = DateTime.Now.ToString("MM/dd/yyyy"),
-        BorrowRecords = new List<BorrowRecord>()
-    });
-    
     app.UseSwagger();
     app.UseSwaggerUI();
 }

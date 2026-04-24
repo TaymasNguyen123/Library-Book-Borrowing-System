@@ -10,11 +10,13 @@ namespace Library_Book_Borrowing_System.Controllers;
 [ApiController]
 [Route("api/books")]
 [Authorize]
-public class BooksController(IBookService bookService) : ControllerBase
+public class BooksController(IBookService bookService, AuthHelper _authHelper) : ControllerBase
 {
     [HttpPost]
     public ActionResult<GetBookResponse> CreateBook(CreateBookRequest book)
     {
+        if (!_authHelper.isAdmin()) return Forbid();
+        
         GetBookResponse? newBook = bookService.CreateBook(book);
         return CreatedAtAction(nameof(CreateBook), new { id = newBook.Id }, newBook);
     }
@@ -37,6 +39,8 @@ public class BooksController(IBookService bookService) : ControllerBase
     [HttpPut("{id:guid}")]
     public ActionResult<GetBookResponse> UpdateBook(Guid id, [FromBody] UpdateBookRequest newBook)
     {
+        if (!_authHelper.isAdmin()) return Forbid();
+
         GetBookResponse? updatedBook = bookService.UpdateBook(id, newBook);
         return Ok(updatedBook);
     }
@@ -44,6 +48,8 @@ public class BooksController(IBookService bookService) : ControllerBase
     [HttpDelete("{id:guid}")]
     public IActionResult DeleteBook(Guid id)
     {
+        if (!_authHelper.isAdmin()) return Forbid();
+
         bookService.DeleteBook(id);
         return NoContent();
     }

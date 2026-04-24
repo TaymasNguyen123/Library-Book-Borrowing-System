@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Library_Book_Borrowing_System.Migrations
 {
     [DbContext(typeof(Database))]
-    [Migration("20260424010155_AddAuthUserFields")]
+    [Migration("20260424024706_AddAuthUserFields")]
     partial class AddAuthUserFields
     {
         /// <inheritdoc />
@@ -100,6 +100,10 @@ namespace Library_Book_Borrowing_System.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Role")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
