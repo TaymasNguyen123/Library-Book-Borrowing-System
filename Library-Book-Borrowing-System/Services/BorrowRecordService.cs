@@ -54,7 +54,7 @@ public class BorrowRecordService: IBorrowRecordService
             throw new HttpRequestException(GlobalExceptionHandler.ZERO_COPIES_AVAILABLE, null, System.Net.HttpStatusCode.Conflict);
         }
 
-
+        Console.WriteLine("1debug");
         // Get all records of requested book to check if user is already borrowing
         IEnumerable<BorrowRecord>? _records = _borrowRecordRepository.GetByMemberId(memberId)
             ?.Where(record => 
@@ -62,11 +62,13 @@ public class BorrowRecordService: IBorrowRecordService
                 record.MemberId == memberId &&
                 record.Status == "Borrowed"
             );
+        Console.WriteLine("2debug");
 
         if (_records is not null && _records.Count() != 0)
         {
             throw new HttpRequestException(GlobalExceptionHandler.DUPLICATE_RECORD, null, System.Net.HttpStatusCode.Conflict);
         }
+        Console.WriteLine("3debug");
 
         BorrowRecord _borrowRecord = new BorrowRecord
         {
@@ -77,12 +79,14 @@ public class BorrowRecordService: IBorrowRecordService
             ReturnDate = null,
             Status = "Borrowed"
         };
+        Console.WriteLine("4debug");
         BorrowRecord? record = _borrowRecordRepository.Borrow(_borrowRecord);
+        Console.WriteLine("5debug");
         if (record is null)
         {
             throw new HttpRequestException(GlobalExceptionHandler.ZERO_COPIES_AVAILABLE, null, System.Net.HttpStatusCode.Conflict);
         }
- 
+
         _cache.Remove("record:list");
 
         _book.AvailableCopies--;
