@@ -77,7 +77,12 @@ public class BorrowRecordService: IBorrowRecordService
             ReturnDate = null,
             Status = "Borrowed"
         };
-        _borrowRecordRepository.Borrow(_borrowRecord);
+        BorrowRecord? record = _borrowRecordRepository.Borrow(_borrowRecord);
+        if (record is null)
+        {
+            throw new HttpRequestException(GlobalExceptionHandler.ZERO_COPIES_AVAILABLE, null, System.Net.HttpStatusCode.Conflict);
+        }
+ 
         _cache.Remove("record:list");
 
         _book.AvailableCopies--;

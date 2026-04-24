@@ -114,18 +114,15 @@ public class BookService: IBookService
     }
     public GetBookResponse UpdateBook(Guid id, UpdateBookRequest book)
     {
-        Book? bookUpdating = _bookRepository.GetById(id);
-        if (bookUpdating is null)
-        {
-            throw new HttpRequestException(GlobalExceptionHandler.MISSING_BOOK_ID, null, System.Net.HttpStatusCode.NotFound);
-        }
+        Book? bookUpdating = _bookRepository.GetById(id)
+            ?? throw new HttpRequestException(GlobalExceptionHandler.MISSING_BOOK_ID, null, System.Net.HttpStatusCode.NotFound);
         
         if (book.AvailableCopies > book.TotalCopies)
         {
             throw new HttpRequestException(GlobalExceptionHandler.MORE_AVAILABLE_THAN_TOTAL, null, System.Net.HttpStatusCode.NotFound);
         }
 
-        if (!Helper.IsValidIsbn(book.Isbn))
+        if (book.Isbn is not null && !Helper.IsValidIsbn(book.Isbn))
         {
             throw new HttpRequestException(GlobalExceptionHandler.INVALID_ISBN, null, System.Net.HttpStatusCode.NotFound);
         }
@@ -136,19 +133,23 @@ public class BookService: IBookService
             throw new HttpRequestException(GlobalExceptionHandler.DUPLICATE_ISBN, null, System.Net.HttpStatusCode.BadRequest);   
         }
 
-        bookUpdating.Title = book.Title;
-        bookUpdating.Author = book.Author;
-        bookUpdating.Isbn = book.Isbn;
-        bookUpdating.TotalCopies = (int) book.TotalCopies;
-        bookUpdating.AvailableCopies = (int) book.AvailableCopies;
-        bookUpdating.BorrowedCount = (int) book.BorrowedCount;
+        bookUpdating.Title = book.Title ?? bookUpdating.Title;
+        bookUpdating.Author = book.Author ?? bookUpdating.Author;
+        bookUpdating.Isbn = book.Isbn ?? bookUpdating.Isbn;
+        bookUpdating.TotalCopies = book.TotalCopies ?? bookUpdating.TotalCopies;
+        bookUpdating.AvailableCopies = book.AvailableCopies ?? bookUpdating.AvailableCopies;
+        bookUpdating.BorrowedCount = book.BorrowedCount ?? bookUpdating.BorrowedCount;
 
         if (bookUpdating.AvailableCopies > bookUpdating.TotalCopies)
         {
             throw new HttpRequestException(GlobalExceptionHandler.MORE_AVAILABLE_THAN_TOTAL, null, System.Net.HttpStatusCode.BadRequest);
         }
 
-        var updated = _bookRepository.Update(id, bookUpdating);
+        Book? updated = _bookRepository.Update(id, bookUpdating);
+        if (updated is null)
+        {
+            throw new HttpRequestException(GlobalExceptionHandler.MISSING_BOOK_ID, null, System.Net.HttpStatusCode.NotFound);
+        }
 
         GetBookResponse response = new GetBookResponse
         {

@@ -6,8 +6,16 @@ namespace Library_Book_Borrowing_System.Repositories;
 
 public class BorrowRecordRepository(Database database) : IBorrowRecordRepository
 {
-    public BorrowRecord Borrow(BorrowRecord borrowRecord)
+    public BorrowRecord? Borrow(BorrowRecord borrowRecord)
     {
+        int rowsAffected = database.Database.ExecuteSqlRaw(@"
+            UPDATE Books
+            SET AvailableBooks = AvailableBooks - 1
+            WHERE Id = {0} AND AvailableBooks > 0
+        ", borrowRecord.BookId);
+
+        if (rowsAffected == 0) return null;
+
         database.BorrowRecords.Add(borrowRecord);
         database.SaveChanges();
         return borrowRecord;
