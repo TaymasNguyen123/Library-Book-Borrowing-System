@@ -20,7 +20,7 @@ public class MemberRepository(Database database) : IMemberRepository
 
     public Member? GetById(Guid id)
     {
-        return database.Members.AsNoTracking().FirstOrDefault(member => member.Id == id);
+        return database.Members.Include(p => p.BorrowRecords).AsNoTracking().ToList().FirstOrDefault(member => member.Id == id);
     }
 
     public Member? Update(Guid id, Member member)

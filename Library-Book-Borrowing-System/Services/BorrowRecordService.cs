@@ -108,9 +108,6 @@ public class BorrowRecordService: IBorrowRecordService
             BorrowRecords = _member.BorrowRecords
         });
 
-        Console.WriteLine("1debug");
-        Console.WriteLine(_member.BorrowRecords.ElementAt(0).Status);
-
         return new GetBorrowRecordResponse
         {
             Id = _borrowRecord.Id,
