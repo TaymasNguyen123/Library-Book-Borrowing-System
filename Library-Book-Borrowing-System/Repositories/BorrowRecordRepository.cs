@@ -10,8 +10,8 @@ public class BorrowRecordRepository(Database database) : IBorrowRecordRepository
     {
         int rowsAffected = database.Database.ExecuteSqlRaw(@"
             UPDATE Books
-            SET AvailableCopies = AvailableCopies - 1
-            WHERE Id = {0} AND AvailableCopies > 0
+            SET AvailableBooks = AvailableBooks - 1
+            WHERE Id = {0} AND AvailableBooks > 0
         ", borrowRecord.BookId);
 
         if (rowsAffected == 0) return null;
