@@ -9,5 +9,7 @@ public interface IBookService
     Task<GetBookDetailsResponse> GetBookById(Guid id);
     GetBookResponse UpdateBook(Guid id, UpdateBookRequest book);
     void DeleteBook(Guid id);
+
+    Task<IEnumerable<GetBookDetailsResponse>> SearchBooksAsync(string? title, string? author, string? isbn);
     
 }

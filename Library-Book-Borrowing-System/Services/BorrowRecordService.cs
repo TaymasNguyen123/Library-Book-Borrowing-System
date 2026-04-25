@@ -105,8 +105,12 @@ public class BorrowRecordService: IBorrowRecordService
             Id = _member.Id,
             FullName = _member.FullName,
             Email = _member.Email,
+            MembershipDate = _member.MembershipDate, 
             BorrowRecords = _member.BorrowRecords
         });
+
+        _cache.Remove("member:list");
+        _cache.Remove($"member:{memberId}");
 
         return new GetBorrowRecordResponse
         {
@@ -130,38 +134,44 @@ public class BorrowRecordService: IBorrowRecordService
         {
             throw new HttpRequestException(GlobalExceptionHandler.MISSING_BOOK_ID, null, System.Net.HttpStatusCode.NotFound);
         }
+        if (_member is null)
+        {
+            throw new HttpRequestException(GlobalExceptionHandler.MISSING_MEMBER_ID, null, System.Net.HttpStatusCode.NotFound);
+        }
 
-        // Get all borrowing records that match the book and are currently borrowed
-        IEnumerable<BorrowRecord>? _records = _borrowRecordRepository.GetByMemberId(memberId)
-            ?.Where(
-                record => record.BookId == bookId && 
-                record.MemberId == memberId &&
-                record.Status == "Borrowed"
-            );
-        if (_records is null || _records.Count() == 0)
+        var _records = _borrowRecordRepository.GetByMemberId(memberId)
+            ?.Where(r => r.BookId == bookId && r.Status == "Borrowed");
+
+        if (_records is null || !_records.Any())
         {
             throw new HttpRequestException(GlobalExceptionHandler.MISSING_BORROW_RECORD, null, System.Net.HttpStatusCode.Conflict);
         }
-        var _record = _records.ElementAt(0);
+
+        var _record = _records.First();
         
         _record.ReturnDate = DateTime.Now.ToString("MM/dd/yyyy");
         _record.Status = "Returned";
-
         BorrowRecord returned = _borrowRecordRepository.Return(_record);
-        _cache.Remove("record:list");
 
-        _book.AvailableCopies++;
-        _bookRepository.Update(bookId, _book);
+        if (_book.AvailableCopies < _book.TotalCopies) 
+        {
+            _book.AvailableCopies++;
+            _bookRepository.Update(bookId, _book);
+        }
         _cache.Remove($"book:{bookId}");
 
-        _member.BorrowRecords.Remove(returned);
-    
-        _memberRepository.Update(memberId, new Member{
-            Id = _member.Id,
-            FullName = _member.FullName,
-            Email = _member.Email,
-            BorrowRecords = _member.BorrowRecords
-        });
+        var recordInMember = _member.BorrowRecords.FirstOrDefault(r => r.Id == _record.Id);
+        if (recordInMember != null)
+        {
+            recordInMember.Status = "Returned";
+            recordInMember.ReturnDate = _record.ReturnDate;
+        }
+
+        _memberRepository.Update(memberId, _member);
+        _cache.Remove("record:list");
+        _cache.Remove($"record:{memberId}");
+        _cache.Remove("member:list");
+        _cache.Remove($"member:{memberId}");
 
         return new GetBorrowRecordResponse
         {
