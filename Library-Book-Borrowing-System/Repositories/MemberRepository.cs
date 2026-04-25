@@ -20,28 +20,45 @@ public class MemberRepository(Database database) : IMemberRepository
 
     public Member? GetById(Guid id)
     {
-        return database.Members.Include(p => p.BorrowRecords).AsNoTracking().ToList().FirstOrDefault(member => member.Id == id);
+        return database.Members.Include(p => p.BorrowRecords).AsNoTracking().FirstOrDefault(member => member.Id == id);
     }
 
     public Member? Update(Guid id, Member member)
     {
-        Member? findMember = GetById(id);
-        if (findMember is not null)
+        var existingMember = database.Members
+            .Include(p => p.BorrowRecords)
+            .FirstOrDefault(m => m.Id == id);
+
+        if (existingMember != null)
         {
-            findMember.FullName = member.FullName;
-            findMember.Email = member.Email;
-            findMember.BorrowRecords = member.BorrowRecords;
+            existingMember.FullName = member.FullName;
+            existingMember.Email = member.Email;
+
+            if (member.MembershipDate != null)
+            {
+                existingMember.MembershipDate = member.MembershipDate;
+            }
             
-            database.Entry(findMember).State = EntityState.Modified;
+            if (member.BorrowRecords != null && member.BorrowRecords.Any())
+            {
+                existingMember.BorrowRecords = member.BorrowRecords;
+            }
+
             database.SaveChanges();
+            return existingMember;
         }
-        return findMember;
+
+        return null;
     }
 
     public void Delete(Guid id)
     {
-        database.Members.Where(member => member.Id == id).ExecuteDeleteAsync();
-        database.SaveChanges();
+        var member = database.Members.FirstOrDefault(m => m.Id == id);
+                if (member != null)
+                {
+                    database.Members.Remove(member);
+                    database.SaveChanges();
+                }
     }
 
     public Task<bool> ExistsAsync(Guid memberId)

@@ -15,6 +15,7 @@ public class GlobalExceptionHandler : IExceptionHandler
     public const string MISSING_BORROW_RECORD = "Member has not borrowed this book";
     public const string DUPLICATE_RECORD = "Book is already being borrowed by member";
     public const string ZERO_COPIES_AVAILABLE = "Zero copies Available";
+    public const string NO_BOOKS_FOUND = "No books found matching the search criteria";
     private readonly ILogger<GlobalExceptionHandler> _logger;
 
     public GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger)

@@ -3,6 +3,9 @@ using Library_Book_Borrowing_System.Models;
 using Library_Book_Borrowing_System.Repositories;
 using Library_Book_Borrowing_System.GlobalException;
 using Microsoft.Extensions.Caching.Memory;
+using System.Data.Common;
+using System.Security.Cryptography.X509Certificates;
+using System.Globalization;
 
 namespace Library_Book_Borrowing_System.Services;
 
@@ -172,5 +175,59 @@ public class BookService: IBookService
         _cache.Remove("book:list");
 
         _bookRepository.Delete(id);
+    }
+    public async Task<IEnumerable<GetBookDetailsResponse>> SearchBooksAsync(string? title, string? author, string? isbn)
+    {
+        if (string.IsNullOrWhiteSpace(title) && 
+            string.IsNullOrWhiteSpace(author) && 
+            string.IsNullOrWhiteSpace(isbn))
+        {
+            throw new HttpRequestException(
+                "Please provide at least one search criteria (Title, Author, or ISBN).", 
+                null, 
+                System.Net.HttpStatusCode.BadRequest
+            );
+            
+        }
+        
+        var books = _bookRepository.GetAll(); 
+        var query = books.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(title))
+            query = query.Where(b => b.Title.Contains(title, StringComparison.OrdinalIgnoreCase));
+
+        if (!string.IsNullOrWhiteSpace(author))
+            query = query.Where(b => b.Author.Contains(author, StringComparison.OrdinalIgnoreCase));
+
+        if (!string.IsNullOrWhiteSpace(isbn))
+            query = query.Where(b => b.Isbn == isbn);
+
+        var results = query.Select(bk => new GetBookDetailsResponse
+        {
+            Id = bk.Id,
+            Title = bk.Title,
+            Author = bk.Author,
+            Isbn = bk.Isbn,
+            TotalCopies = bk.TotalCopies,
+            AvailableCopies = bk.AvailableCopies,
+            BorrowedCount = bk.BorrowedCount
+        }).ToList();
+
+        if (!results.Any())
+        {
+            string searchDetails = string.Join(", ", new[] {
+                !string.IsNullOrEmpty(title) ? $"Title: {title}" : null,
+                !string.IsNullOrEmpty(author) ? $"Author: {author}" : null,
+                !string.IsNullOrEmpty(isbn) ? $"ISBN: {isbn}" : null
+            }.Where(s => s != null));
+
+            throw new HttpRequestException(
+                $"No books found matching the search criteria: {searchDetails}", 
+                null, 
+                System.Net.HttpStatusCode.BadRequest
+            );
+        }
+
+        return results;
     }
 }

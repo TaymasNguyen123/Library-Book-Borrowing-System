@@ -47,11 +47,13 @@ public class MemberService(IMemberRepository _memberRepository, IMemoryCache _ca
     }
     public IEnumerable<GetMemberResponse> GetAllMembers()
     {
-        if (_cache.TryGetValue("member:list", out IEnumerable<GetMemberResponse>? list))
+        if (_cache.TryGetValue("member:list", out IEnumerable<GetMemberResponse>? list) && list != null)
         {
             return list;
         }
         
+        var members = _memberRepository.GetAll();
+
         IEnumerable<GetMemberResponse> memberList = _memberRepository.GetAll()
             .Select(member => new GetMemberResponse
             {
@@ -59,8 +61,8 @@ public class MemberService(IMemberRepository _memberRepository, IMemoryCache _ca
                 FullName = member.FullName,
                 Email = member.Email,
                 MembershipDate = member.MembershipDate,
-                BorrowRecords = member.BorrowRecords
-            });
+                BorrowRecords = member.BorrowRecords ?? new List<BorrowRecord>()
+            }).ToList();
         
         _cache.Set("member:list", memberList, _cacheOptions);
         
@@ -68,7 +70,7 @@ public class MemberService(IMemberRepository _memberRepository, IMemoryCache _ca
     }
     public async Task<GetMemberResponse> GetMemberById(Guid id)
     {
-        if (_cache.TryGetValue(id, out GetMemberResponse? value))
+        if (_cache.TryGetValue($"member:{id}", out GetMemberResponse? value))
         {
             return value;
         }
@@ -81,7 +83,8 @@ public class MemberService(IMemberRepository _memberRepository, IMemoryCache _ca
             Id = _member.Id,
             FullName = _member.FullName,
             Email = _member.Email,
-            MembershipDate = _member.MembershipDate
+            MembershipDate = _member.MembershipDate,
+            BorrowRecords = _member.BorrowRecords
         };
 
         _cache.Set($"member:{response.Id}", response, _cacheOptions);
@@ -108,7 +111,6 @@ public class MemberService(IMemberRepository _memberRepository, IMemoryCache _ca
         memberUpdating.FullName = member.FullName ?? memberUpdating.FullName;
         memberUpdating.Email = member.Email ?? memberUpdating.Email;
         memberUpdating.BorrowRecords = member.BorrowRecords ?? memberUpdating.BorrowRecords;
-
         Member? updated = _memberRepository.Update(id, memberUpdating);
 
         _cache.Remove($"member:{updated.Id}");
@@ -119,6 +121,7 @@ public class MemberService(IMemberRepository _memberRepository, IMemoryCache _ca
             Id = id,
             FullName = updated.FullName,
             Email = updated.Email,
+            MembershipDate = updated.MembershipDate,
             BorrowRecords = updated.BorrowRecords
         };
     }
