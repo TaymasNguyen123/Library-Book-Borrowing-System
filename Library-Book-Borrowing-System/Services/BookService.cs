@@ -171,6 +171,13 @@ public class BookService: IBookService
     }
     public void DeleteBook(Guid id)
     {
+        var isBeingBorrowed = _borrowRecordRepository.GetAll()
+            .Any(r => r.BookId == id && r.Status == "Borrowed");
+        
+        if(isBeingBorrowed)
+        {
+            throw new HttpRequestException(GlobalExceptionHandler.BOOK_IS_BORROWED, null, System.Net.HttpStatusCode.Conflict);
+        }
         _cache.Remove($"book:{id}");
         _cache.Remove("book:list");
 
@@ -183,7 +190,7 @@ public class BookService: IBookService
             string.IsNullOrWhiteSpace(isbn))
         {
             throw new HttpRequestException(
-                "Please provide at least one search criteria (Title, Author, or ISBN).", 
+                GlobalExceptionHandler.NOT_FOUND, 
                 null, 
                 System.Net.HttpStatusCode.BadRequest
             );
