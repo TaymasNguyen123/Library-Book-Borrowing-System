@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Library_Book_Borrowing_System.Dtos;
-using Library_Book_Borrowing_System.Models;
 using Library_Book_Borrowing_System.Services;
-using System.Runtime.InteropServices;
 
 namespace Library_Book_Borrowing_System.Controllers;
 
@@ -18,9 +16,11 @@ public class BooksController(IBookService bookService) : ControllerBase
     }
 
     [HttpGet]
-    public ActionResult<IEnumerable<GetBookResponse>> GetAllBooks()
+    public ActionResult<PaginatedResponse<GetBookResponse>> GetAllBooks(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10)
     {
-        return Ok(bookService.GetAllBooks());
+        return Ok(bookService.GetAllBooks(pageNumber, pageSize));
     }
 
     [HttpGet("{id:guid}")]

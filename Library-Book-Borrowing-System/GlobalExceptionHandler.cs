@@ -15,6 +15,7 @@ public class GlobalExceptionHandler : IExceptionHandler
     public const string MISSING_BORROW_RECORD = "Member has not borrowed this book";
     public const string DUPLICATE_RECORD = "Book is already being borrowed by member";
     public const string ZERO_COPIES_AVAILABLE = "Zero copies Available";
+    public const string MEMBER_BORROW_LIMIT_EXCEEDED = "Member cannot borrow more than 3 books at the same time";
     public const string NO_BOOKS_FOUND = "No books found matching the search criteria";
     public const string BOOK_IS_BORROWED = "Cannot delete book becuase it is currently being borrowed";
     public const string NOT_FOUND = "Please provide at least one search criteria (Title, Author, or ISBN).";

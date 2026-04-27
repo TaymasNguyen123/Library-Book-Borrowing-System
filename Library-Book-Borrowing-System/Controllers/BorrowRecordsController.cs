@@ -1,6 +1,5 @@
 
 using Library_Book_Borrowing_System.Dtos;
-using Library_Book_Borrowing_System.Models;
 using Library_Book_Borrowing_System.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -26,15 +25,20 @@ public class BorrowRecordsController(IBorrowRecordService borrowRecordService): 
     }
 
     [HttpGet]
-    public ActionResult<GetBorrowRecordResponse> GetAllRecords()
+    public ActionResult<PaginatedResponse<GetBorrowRecordResponse>> GetAllRecords(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10)
     {
-        return Ok(borrowRecordService.GetAllRecords());
+        return Ok(borrowRecordService.GetAllRecords(pageNumber, pageSize));
     }
 
     [HttpGet("{memberId:guid}")]
-    public ActionResult<IEnumerable<GetBorrowRecordResponse>> GetAllRecordsByMember(Guid memberId)
+    public ActionResult<PaginatedResponse<GetBorrowRecordResponse>> GetAllRecordsByMember(
+        Guid memberId,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10)
     {
-        IEnumerable<GetBorrowRecordResponse>? memberRecords = borrowRecordService.GetAllRecordsByMember(memberId);
+        PaginatedResponse<GetBorrowRecordResponse> memberRecords = borrowRecordService.GetAllRecordsByMember(memberId, pageNumber, pageSize);
         return Ok(memberRecords);
     }
 }
