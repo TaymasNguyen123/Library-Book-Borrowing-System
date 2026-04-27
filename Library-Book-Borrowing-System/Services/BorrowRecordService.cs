@@ -1,75 +1,96 @@
-using Library_Book_Borrowing_System.Models;
 using Library_Book_Borrowing_System.Dtos;
-using Library_Book_Borrowing_System.Repositories;
-using System.Collections.Immutable;
 using Library_Book_Borrowing_System.GlobalException;
+using Library_Book_Borrowing_System.Models;
+using Library_Book_Borrowing_System.Repositories;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace Library_Book_Borrowing_System.Services;
 
-public class BorrowRecordService: IBorrowRecordService
+public class BorrowRecordService : IBorrowRecordService
 {
+    private const int MaxActiveBorrowedBooks = 3;
+
     private readonly IBorrowRecordRepository _borrowRecordRepository;
     private readonly IBookRepository _bookRepository;
     private readonly IMemberRepository _memberRepository;
-    private readonly IMemberService _memberService;
     private readonly IMemoryCache _cache;
+    private readonly ILogger<BorrowRecordService> _logger;
     private readonly MemoryCacheEntryOptions _cacheOptions = new MemoryCacheEntryOptions
     {
         AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2),
-        SlidingExpiration = TimeSpan.FromSeconds(30)    
+        SlidingExpiration = TimeSpan.FromSeconds(30)
     };
 
     public BorrowRecordService(
-        IBorrowRecordRepository borrowRecordRepository, 
+        IBorrowRecordRepository borrowRecordRepository,
         IBookRepository bookRepository,
         IMemberRepository memberRepository,
-        IMemoryCache cache
-    )
+        IMemoryCache cache,
+        ILogger<BorrowRecordService> logger)
     {
         _borrowRecordRepository = borrowRecordRepository;
         _bookRepository = bookRepository;
         _memberRepository = memberRepository;
         _cache = cache;
+        _logger = logger;
     }
+
     public GetBorrowRecordResponse BorrowBook(CreateBorrowRecordRequest borrowRecord)
     {
         Guid bookId = borrowRecord.BookId;
         Guid memberId = borrowRecord.MemberId;
 
-        Book? _book = _bookRepository.GetById(bookId);
-        Member? _member = _memberRepository.GetById(memberId);
+        Book? book = _bookRepository.GetById(bookId);
+        Member? member = _memberRepository.GetById(memberId);
 
-        if (_book is null)
+        if (book is null)
         {
+            _logger.LogWarning("Invalid book id provided: {BookId}", bookId);
             throw new HttpRequestException(GlobalExceptionHandler.MISSING_BOOK_ID, null, System.Net.HttpStatusCode.NotFound);
         }
 
-        if (_member is null)
+        if (member is null)
         {
+            _logger.LogWarning("Invalid member id provided: {MemberId}", memberId);
             throw new HttpRequestException(GlobalExceptionHandler.MISSING_MEMBER_ID, null, System.Net.HttpStatusCode.NotFound);
         }
 
-        if (_book.AvailableCopies <= 0)
+        if (book.AvailableCopies <= 0)
         {
+            _logger.LogWarning(
+                "Cannot borrow book {BookId} for member {MemberId}: zero available copies",
+                bookId,
+                memberId);
             throw new HttpRequestException(GlobalExceptionHandler.ZERO_COPIES_AVAILABLE, null, System.Net.HttpStatusCode.Conflict);
         }
 
+        List<BorrowRecord> activeBorrowRecords = _borrowRecordRepository.GetByMemberId(memberId)
+            ?.Where(record => record.Status == "Borrowed")
+            .ToList()
+            ?? new List<BorrowRecord>();
 
-        // Get all records of requested book to check if user is already borrowing
-        IEnumerable<BorrowRecord>? _records = _borrowRecordRepository.GetByMemberId(memberId)
-            ?.Where(record => 
-                record.BookId == bookId && 
-                record.MemberId == memberId &&
-                record.Status == "Borrowed"
-            );
-
-        if (_records is not null && _records.Count() != 0)
+        if (activeBorrowRecords.Any(record => record.BookId == bookId))
         {
+            _logger.LogWarning(
+                "Cannot borrow book {BookId} for member {MemberId}: duplicate borrowing attempted",
+                bookId,
+                memberId);
             throw new HttpRequestException(GlobalExceptionHandler.DUPLICATE_RECORD, null, System.Net.HttpStatusCode.Conflict);
         }
 
-        BorrowRecord _borrowRecord = new BorrowRecord
+        if (activeBorrowRecords.Count >= MaxActiveBorrowedBooks)
+        {
+            _logger.LogWarning(
+                "Cannot borrow book for member {MemberId}: active borrow limit reached at {ActiveBorrowCount}",
+                memberId,
+                activeBorrowRecords.Count);
+            throw new HttpRequestException(
+                GlobalExceptionHandler.MEMBER_BORROW_LIMIT_EXCEEDED,
+                null,
+                System.Net.HttpStatusCode.Conflict);
+        }
+
+        BorrowRecord newBorrowRecord = new BorrowRecord
         {
             Id = new Guid(),
             BookId = bookId,
@@ -78,102 +99,127 @@ public class BorrowRecordService: IBorrowRecordService
             ReturnDate = null,
             Status = "Borrowed"
         };
-        BorrowRecord? record = _borrowRecordRepository.Borrow(_borrowRecord);
+
+        BorrowRecord? record = _borrowRecordRepository.Borrow(newBorrowRecord);
         if (record is null)
         {
+            _logger.LogWarning(
+                "Cannot borrow book {BookId} for member {MemberId}: zero available copies",
+                bookId,
+                memberId);
             throw new HttpRequestException(GlobalExceptionHandler.ZERO_COPIES_AVAILABLE, null, System.Net.HttpStatusCode.Conflict);
         }
- 
+
         _cache.Remove("record:list");
 
-        _book.AvailableCopies--;
-        _book.BorrowedCount++;
-        _bookRepository.Update(bookId, _book);
+        book.AvailableCopies--;
+        book.BorrowedCount++;
+        _bookRepository.Update(bookId, book);
         _cache.Remove($"book:{bookId}");
+        _cache.Remove("book:list");
 
-        _member.BorrowRecords.Add(new BorrowRecord
+        member.BorrowRecords ??= new List<BorrowRecord>();
+        member.BorrowRecords.Add(new BorrowRecord
         {
-            Id = _borrowRecord.Id,
+            Id = newBorrowRecord.Id,
             BookId = bookId,
             MemberId = memberId,
-            BorrowDate = _borrowRecord.BorrowDate,
+            BorrowDate = newBorrowRecord.BorrowDate,
             ReturnDate = null,
-            Status = _borrowRecord.Status
+            Status = newBorrowRecord.Status
         });
-    
-        _memberRepository.Update(memberId, new Member{
-            Id = _member.Id,
-            FullName = _member.FullName,
-            Email = _member.Email,
-            MembershipDate = _member.MembershipDate, 
-            BorrowRecords = _member.BorrowRecords
+
+        _memberRepository.Update(memberId, new Member
+        {
+            Id = member.Id,
+            FullName = member.FullName,
+            Email = member.Email,
+            MembershipDate = member.MembershipDate,
+            BorrowRecords = member.BorrowRecords
         });
 
         _cache.Remove("member:list");
         _cache.Remove($"member:{memberId}");
+        _cache.Remove($"record:{memberId}");
 
-        return new GetBorrowRecordResponse
+        GetBorrowRecordResponse response = new GetBorrowRecordResponse
         {
-            Id = _borrowRecord.Id,
+            Id = newBorrowRecord.Id,
             BookId = bookId,
             MemberId = memberId,
-            BorrowDate = _borrowRecord.BorrowDate,
+            BorrowDate = newBorrowRecord.BorrowDate,
             ReturnDate = null,
-            Status = _borrowRecord.Status
+            Status = newBorrowRecord.Status
         };
+
+        _logger.LogInformation(
+            "Book borrowed successfully. BorrowRecordId: {BorrowRecordId}, BookId: {BookId}, MemberId: {MemberId}",
+            response.Id,
+            response.BookId,
+            response.MemberId);
+
+        return response;
     }
+
     public GetBorrowRecordResponse ReturnBook(UpdateBorrowRecordRequest borrowRecord)
     {
         Guid bookId = borrowRecord.BookId;
         Guid memberId = borrowRecord.MemberId;
 
-        Book? _book = _bookRepository.GetById(bookId);
-        Member? _member = _memberRepository.GetById(memberId);
+        Book? book = _bookRepository.GetById(bookId);
+        Member? member = _memberRepository.GetById(memberId);
 
-        if (_book is null)
+        if (book is null)
         {
+            _logger.LogWarning("Invalid book id provided: {BookId}", bookId);
             throw new HttpRequestException(GlobalExceptionHandler.MISSING_BOOK_ID, null, System.Net.HttpStatusCode.NotFound);
         }
-        if (_member is null)
+
+        if (member is null)
         {
+            _logger.LogWarning("Invalid member id provided: {MemberId}", memberId);
             throw new HttpRequestException(GlobalExceptionHandler.MISSING_MEMBER_ID, null, System.Net.HttpStatusCode.NotFound);
         }
 
-        var _records = _borrowRecordRepository.GetByMemberId(memberId)
-            ?.Where(r => r.BookId == bookId && r.Status == "Borrowed");
+        List<BorrowRecord> records = _borrowRecordRepository.GetByMemberId(memberId)
+            ?.Where(r => r.BookId == bookId && r.Status == "Borrowed")
+            .ToList()
+            ?? new List<BorrowRecord>();
 
-        if (_records is null || !_records.Any())
+        if (!records.Any())
         {
             throw new HttpRequestException(GlobalExceptionHandler.MISSING_BORROW_RECORD, null, System.Net.HttpStatusCode.Conflict);
         }
 
-        var _record = _records.First();
-        
-        _record.ReturnDate = DateTime.Now.ToString("MM/dd/yyyy");
-        _record.Status = "Returned";
-        BorrowRecord returned = _borrowRecordRepository.Return(_record);
+        BorrowRecord record = records.First();
+        record.ReturnDate = DateTime.Now.ToString("MM/dd/yyyy");
+        record.Status = "Returned";
 
-        if (_book.AvailableCopies < _book.TotalCopies) 
+        BorrowRecord returned = _borrowRecordRepository.Return(record);
+
+        if (book.AvailableCopies < book.TotalCopies)
         {
-            _book.AvailableCopies++;
-            _bookRepository.Update(bookId, _book);
+            book.AvailableCopies++;
+            _bookRepository.Update(bookId, book);
         }
-        _cache.Remove($"book:{bookId}");
 
-        var recordInMember = _member.BorrowRecords.FirstOrDefault(r => r.Id == _record.Id);
-        if (recordInMember != null)
+        _cache.Remove($"book:{bookId}");
+        _cache.Remove("book:list");
+
+        BorrowRecord? recordInMember = member.BorrowRecords?.FirstOrDefault(r => r.Id == record.Id);
+        if (recordInMember is not null)
         {
             recordInMember.Status = "Returned";
-            recordInMember.ReturnDate = _record.ReturnDate;
+            recordInMember.ReturnDate = record.ReturnDate;
         }
 
-        _memberRepository.Update(memberId, _member);
+        _memberRepository.Update(memberId, member);
         _cache.Remove("record:list");
         _cache.Remove($"record:{memberId}");
         _cache.Remove("member:list");
         _cache.Remove($"member:{memberId}");
 
-        return new GetBorrowRecordResponse
+        GetBorrowRecordResponse response = new GetBorrowRecordResponse
         {
             Id = returned.Id,
             BookId = bookId,
@@ -182,15 +228,24 @@ public class BorrowRecordService: IBorrowRecordService
             ReturnDate = returned.ReturnDate,
             Status = returned.Status
         };
+
+        _logger.LogInformation(
+            "Book returned successfully. BorrowRecordId: {BorrowRecordId}, BookId: {BookId}, MemberId: {MemberId}",
+            response.Id,
+            response.BookId,
+            response.MemberId);
+
+        return response;
     }
+
     public IEnumerable<GetBorrowRecordResponse> GetAllRecords()
     {
-        if (_cache.TryGetValue("record:list", out IEnumerable<GetBorrowRecordResponse>? list))
+        if (_cache.TryGetValue("record:list", out IEnumerable<GetBorrowRecordResponse>? list) && list is not null)
         {
             return list;
         }
 
-        IEnumerable<GetBorrowRecordResponse>? responses = _borrowRecordRepository.GetAll()
+        List<GetBorrowRecordResponse> responses = _borrowRecordRepository.GetAll()
             .Select(record => new GetBorrowRecordResponse
             {
                 Id = record.Id,
@@ -199,21 +254,34 @@ public class BorrowRecordService: IBorrowRecordService
                 BorrowDate = record.BorrowDate,
                 ReturnDate = record.ReturnDate,
                 Status = record.Status
-            });
-        
+            })
+            .ToList();
+
         _cache.Set("record:list", responses, _cacheOptions);
-        
+
         return responses;
+    }
+
+    public PaginatedResponse<GetBorrowRecordResponse> GetAllRecords(int pageNumber, int pageSize)
+    {
+        return Helper.ToPaginatedResponse(GetAllRecords(), pageNumber, pageSize);
     }
 
     public IEnumerable<GetBorrowRecordResponse>? GetAllRecordsByMember(Guid memberId)
     {
-        if (_cache.TryGetValue($"record:{memberId}", out IEnumerable<GetBorrowRecordResponse>? records))
+        Member? member = _memberRepository.GetById(memberId);
+        if (member is null)
+        {
+            _logger.LogWarning("Invalid member id provided: {MemberId}", memberId);
+            throw new HttpRequestException(GlobalExceptionHandler.MISSING_MEMBER_ID, null, System.Net.HttpStatusCode.NotFound);
+        }
+
+        if (_cache.TryGetValue($"record:{memberId}", out IEnumerable<GetBorrowRecordResponse>? records) && records is not null)
         {
             return records;
         }
 
-        IEnumerable<GetBorrowRecordResponse>? responses = _borrowRecordRepository.GetByMemberId(memberId)
+        List<GetBorrowRecordResponse> responses = _borrowRecordRepository.GetByMemberId(memberId)
             ?.Select(record => new GetBorrowRecordResponse
             {
                 Id = record.Id,
@@ -222,10 +290,20 @@ public class BorrowRecordService: IBorrowRecordService
                 BorrowDate = record.BorrowDate,
                 ReturnDate = record.ReturnDate,
                 Status = record.Status
-            });
+            })
+            .ToList()
+            ?? new List<GetBorrowRecordResponse>();
 
         _cache.Set($"record:{memberId}", responses, _cacheOptions);
 
         return responses;
+    }
+
+    public PaginatedResponse<GetBorrowRecordResponse> GetAllRecordsByMember(Guid memberId, int pageNumber, int pageSize)
+    {
+        return Helper.ToPaginatedResponse(
+            GetAllRecordsByMember(memberId) ?? Enumerable.Empty<GetBorrowRecordResponse>(),
+            pageNumber,
+            pageSize);
     }
 }

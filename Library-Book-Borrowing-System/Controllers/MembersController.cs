@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Library_Book_Borrowing_System.Dtos;
 using Library_Book_Borrowing_System.Models;
 using Library_Book_Borrowing_System.Services;
-using System.Text.RegularExpressions;
 
 namespace Library_Book_Borrowing_System.Controllers;
 
@@ -19,9 +18,11 @@ public class MembersController(IMemberService memberService): ControllerBase
     }
 
     [HttpGet]
-    public ActionResult<IEnumerable<GetMemberResponse>> GetAllMembers()
+    public ActionResult<PaginatedResponse<GetMemberResponse>> GetAllMembers(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10)
     {
-        return Ok(memberService.GetAllMembers());
+        return Ok(memberService.GetAllMembers(pageNumber, pageSize));
     } 
 
     [HttpGet("{id:guid}")]
